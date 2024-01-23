@@ -4,17 +4,17 @@ import socket
 class Player:
     def __init__(self, player_id=None, shared_memory=None):
         # player_id and player_socket
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.connect('127.0.0.1', 8080)
-        _, port = self.socket.getsockname()
-        self.player_id = port
+        #self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        #self.connect('127.0.0.1', 8080)
+        #_, port = self.socket.getsockname()
+        self.player_id = player_id
         
         # shared_memory
         self.shared_memory = shared_memory
 
         self.hand = []
 
-        self.message_queue = multiprocessing.Queue()
+        #self.message_queue = multiprocessing.Queue()
         
     
     def display_hands(self):

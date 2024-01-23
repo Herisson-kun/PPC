@@ -12,7 +12,10 @@ class Game():
     def __init__(self, shared_memory):
 
         self.player_id_counter = 1
-        self.players = {}
+        """ exemples de joueurs a suppr plus tard """
+        player1 = Player("P1")
+        player2 = Player("P2")
+        self.players = [player1,player2]
 
         #self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         #self.server_socket.bind(('127.0.0.1', 8080))
@@ -28,15 +31,14 @@ class Game():
 
 
     def init_shared_memory(self):
-        self.shared_memory["colors"] = ["blue", "red", "green", "yellow", "white"][:len(self.players)+2]
+        self.shared_memory["colors"] = ["blue", "red", "green", "yellow", "white"][:len(self.players)]
         self.shared_memory["fuse_token"] = 3
         self.shared_memory["info_token"] = len(self.players) + 3
         self.shared_memory["deck"] = random.shuffle(self.deck)
         self.shared_memory["suites"] = {f"{color}" : [] for color in self.shared_memory["colors"]}
 
     def create_deck(self):
-        for color in self.shared_memory["colors"]:
-            print (color)
+        for color in self.shared_memory["colors"]:           
             for value in self.deck:
                 cardToAppend = Card(color,value)
                 self.players_deck.append(cardToAppend)
@@ -84,22 +86,21 @@ class Game():
                 break
 
     def deal_hands(self):
-        hands = {}
-        for player in self.players:
-            hand = [self.draw_hand_card() for _ in range(5)]
-            hands["player".format] = hand
-        print(hands)
-        json_hands = json.dumps(hands)
-        print(json_hands)
+        """ Creation de la main de 5 cartes pour un joueur sous la forme d'une liste de Card"""
+        hands = []
+        for i in range (5):
+            drawn_card = self.draw_card()
+            hands.append(drawn_card)
+            
         return hands
     
-    def draw_hand_card(self):
+    def draw_card(self):
         random_index = random.randint(0, len(self.players_deck)-1)
-        random_card = self.players_deck.remove(random_index)
+        random_card = self.players_deck[random_index]
+        del self.players_deck[random_index]
         return random_card
     
-    def draw_card(self):
-        new_card = self.deck.pop()
+   
 
 
     def run_game(self):
@@ -111,10 +112,16 @@ class Game():
         self.init_shared_memory()
         print("shared mem done")
         self.create_deck()
-        for carte in self.players_deck:
-            print(f"{carte.color} , {carte.number}")
-        self.deal_hands()
+        for player in self.players:
+            player.hand = self.deal_hands()
+            print(player.player_id)
+            for card in player.hand:
+                print(f"{card.color} , {card.number}")
+
         print("hands dealt")
+        print("cartes restantes")
+        for card in self.players_deck:
+            print(f"{card.color} , {card.number}")
         #self.game_process.start()
         #print("process game started")
 
