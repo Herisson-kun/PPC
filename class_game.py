@@ -15,7 +15,8 @@ class Game():
         """ exemples de joueurs a suppr plus tard """
         player1 = Player("P1")
         player2 = Player("P2")
-        self.players = [player1,player2]
+        player3 = Player("P3")
+        self.players = [player1,player2,player3]
 
         #self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         #self.server_socket.bind(('127.0.0.1', 8080))
@@ -29,6 +30,17 @@ class Game():
         self.players_deck = []
         self.deck = [1, 1, 1, 2, 2, 3, 3, 4, 4, 5]
 
+
+    def affichage(self, player_id):
+        print("Affichage player", player_id)
+        print("Fuse token left : ", self.shared_memory["fuse_token"])
+        print("Info token left : ", self.shared_memory["info_token"])
+        print("Discarded cards : ")
+        for player in self.players:
+            if player.player_id != player_id:
+                print("Main de ",player.player_id)
+                for card in player.hand:
+                    print(f"{card.color} , {card.number}")
 
     def init_shared_memory(self):
         self.shared_memory["colors"] = ["blue", "red", "green", "yellow", "white"][:len(self.players)]
@@ -117,14 +129,12 @@ class Game():
         self.create_deck()
         for player in self.players:
             player.hand = self.deal_hands()
-            print(player.player_id)
-            for card in player.hand:
-                print(f"{card.color} , {card.number}")
+            
 
         print("hands dealt")
-        print("cartes restantes")
-        for card in self.players_deck:
-            print(f"{card.color} , {card.number}")
+        
+        for player in self.players:
+            self.affichage(player.player_id)
         #self.game_process.start()
         #print("process game started")
 

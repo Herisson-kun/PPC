@@ -16,7 +16,18 @@ class Player:
 
         #self.message_queue = multiprocessing.Queue()
         
+    """Liste des fonctions pour un player
+    Choisir une des 3 actions suivantes :
+        - envoyer un msg/indice et pay 1 info token
+        - jouer une carte (pay 1 fuse token if not correct)
+        - défausser une carte (pas dans les regles simplifiees) et add 1 info token
     
+    Affichage sur son terminal :
+    main de chaque joueur
+    fuse token restants
+    info token restants
+    discarded cards
+    """
     def display_hands(self):
         for player, hand in self.hands:
             print(f"Player {player.player_id}'s hand: {hand}")
