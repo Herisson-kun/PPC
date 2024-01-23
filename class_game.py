@@ -38,6 +38,7 @@ class Game():
         self.shared_memory["suites"] = {f"{color}" : [] for color in self.shared_memory["colors"]}
 
     def create_deck(self):
+        """Creation de la pioche avec 10 cartes par couleurs"""
         for color in self.shared_memory["colors"]:           
             for value in self.deck:
                 cardToAppend = Card(color,value)
@@ -95,6 +96,8 @@ class Game():
         return hands
     
     def draw_card(self):
+        """Choisis une carte au hasard dans la liste players_deck la supprime de cette
+        derniere et return la carte"""
         random_index = random.randint(0, len(self.players_deck)-1)
         random_card = self.players_deck[random_index]
         del self.players_deck[random_index]
