@@ -12,7 +12,7 @@ class Game:
         self.players_deck = [1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 5]
         self.deck = [1, 1, 1, 2, 2, 3, 3, 4, 4, 5]
         self.game_process = multiprocessing.Process(target=self.run_game)
-
+hibibibi
     def init_shared_memory(self):
         self.shared_memory["colors"] = self.colors = ["blue", "red", "green", "yellow", "white"][:len(self.players)]
         self.shared_memory["fuse_token"] = 3
