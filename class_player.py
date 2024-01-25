@@ -1,6 +1,7 @@
 import multiprocessing
 import socket
 from multiprocessing.managers import BaseManager
+<<<<<<< HEAD
 
 
 class Player:
@@ -13,6 +14,19 @@ class Player:
         
         # shared_memory
         self.shared_memory ={}
+=======
+
+class Player:
+    def __init__(self, player_id=None):
+        # player_id and player_socket
+        #self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        #self.connect('127.0.0.1', 8080)
+        #_, port = self.socket.getsockname()
+        #self.player_id = port
+        
+        # shared_memory
+        #self.shared_memory = shared_memory
+>>>>>>> 81da65e091d82ea76f575427fb3598ba0a28b08d
 
         class MemoryManager(BaseManager): pass
         MemoryManager.register('get_memory'),  
@@ -24,6 +38,7 @@ class Player:
         self.shared_memory.update({"salut":1})
         print(self.shared_memory)
 
+<<<<<<< HEAD
         # self.message_queue = multiprocessing.Queue()
         
     def play(self, game, shared_memory, msg_queue):
@@ -72,6 +87,32 @@ class Player:
                     break
                 except:
                     print("Enter a valid number for type of information")
+=======
+        self.message_queue = multiprocessing.Queue()
+
+       
+        class QueueManager(BaseManager): pass
+        QueueManager.register('get_queue')
+        self.shared_memory = QueueManager(address=('127.0.0.1', 50000), authkey=b'abracadabra')
+        self.shared_memory.connect()
+        
+        
+    def update_shared_memory(self):
+        dico = self.shared_memory.get_queue()
+        
+        dico.update({"remy": "coucou", "johan": "yo"})
+        dico.update({"salut":1})
+        print("dans update :",dico)
+
+    def check_shared_memory(self):
+        queue = self.shared_memory.get_queue()
+        print("dans check : ",queue)
+
+
+    def display_hands(self):
+        for player, hand in self.hands:
+            print(f"Player {player.player_id}'s hand: {hand}")
+>>>>>>> 81da65e091d82ea76f575427fb3598ba0a28b08d
 
     def run(self):
         # Player interaction logic
@@ -98,8 +139,19 @@ class Player:
             except:
                 break
 
+<<<<<<< HEAD
     def signal_handler(signum, frame):
         # Handle signals, e.g., end of game
         pass
 
 player = Player()
+=======
+def signal_handler(signum, frame):
+    # Handle signals, e.g., end of game
+    pass
+
+if __name__ == "__main__":
+    p1 = Player("P1")
+    p1.update_shared_memory()
+    p1.check_shared_memory()
+>>>>>>> 81da65e091d82ea76f575427fb3598ba0a28b08d

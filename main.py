@@ -25,7 +25,7 @@ if __name__ == "__main__":
     shared_memory = Manager().dict()
     Lock = Lock()
 
-    game_instance = Game(shared_memory)
+    game_instance = Game()
     
     game_instance.start_game()
     #game_instance.game_process.join()

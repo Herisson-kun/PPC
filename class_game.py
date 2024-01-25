@@ -9,6 +9,7 @@ from multiprocessing.managers import BaseManager
 
 class Game():
     def __init__(self):
+    def __init__(self):
 
         self.player_id_counter = 1
         self.players = {}
@@ -120,9 +121,11 @@ class Game():
         self.init_shared_memory()
         print("shared mem done")
         """self.create_deck()
+        """self.create_deck()
         for carte in self.players_deck:
             print(f"{carte.color} , {carte.number}")
         self.deal_hands()
+        print("hands dealt")"""
         print("hands dealt")"""
         #self.game_process.start()
         #print("process game started")
