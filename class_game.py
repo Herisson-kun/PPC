@@ -7,9 +7,11 @@ import random
 import signal
 from class_player import Player
 from class_card import Card
+from multiprocessing.managers import BaseManager
+from queue import Queue
 
 class Game():
-    def __init__(self, shared_memory):
+    def __init__(self):
 
         self.player_id_counter = 1
         self.players = {}
@@ -21,18 +23,25 @@ class Game():
         self.player_sockets = {}  # Dictionnaire pour stocker les sockets des joueurs {player:socket}
         #self.accept_players()
 
-        self.shared_memory = shared_memory
+        #self.shared_memory = shared_memory
 
         self.players_deck = []
         self.deck = [1, 1, 1, 2, 2, 3, 3, 4, 4, 5]
 
 
     def init_shared_memory(self):
-        self.shared_memory["colors"] = ["blue", "red", "green", "yellow", "white"][:len(self.players)+2]
+        """self.shared_memory["colors"] = ["blue", "red", "green", "yellow", "white"][:len(self.players)+2]
         self.shared_memory["fuse_token"] = 3
         self.shared_memory["info_token"] = len(self.players) + 3
         self.shared_memory["deck"] = random.shuffle(self.deck)
-        self.shared_memory["suites"] = {f"{color}" : [] for color in self.shared_memory["colors"]}
+        self.shared_memory["suites"] = {f"{color}" : [] for color in self.shared_memory["colors"]}"""
+
+        self.shared_memory = dict()
+        class QueueManager(BaseManager): pass
+        QueueManager.register('get_queue', callable=lambda:self.shared_memory)
+        m = QueueManager(address=('127.0.0.1', 50000), authkey=b'abracadabra')
+        s = m.get_server()
+        s.serve_forever()
 
     def create_deck(self):
         for color in self.shared_memory["colors"]:
@@ -110,11 +119,11 @@ class Game():
     def start_game(self):
         self.init_shared_memory()
         print("shared mem done")
-        self.create_deck()
+        """self.create_deck()
         for carte in self.players_deck:
             print(f"{carte.color} , {carte.number}")
         self.deal_hands()
-        print("hands dealt")
+        print("hands dealt")"""
         #self.game_process.start()
         #print("process game started")
 

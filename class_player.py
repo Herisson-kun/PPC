@@ -1,22 +1,41 @@
 import multiprocessing
 import socket
+from multiprocessing.managers import BaseManager
 
 class Player:
-    def __init__(self, player_id=None, shared_memory=None):
+    def __init__(self, player_id=None):
         # player_id and player_socket
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.connect('127.0.0.1', 8080)
-        _, port = self.socket.getsockname()
-        self.player_id = port
+        #self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        #self.connect('127.0.0.1', 8080)
+        #_, port = self.socket.getsockname()
+        #self.player_id = port
         
         # shared_memory
-        self.shared_memory = shared_memory
+        #self.shared_memory = shared_memory
 
         self.hand = []
 
         self.message_queue = multiprocessing.Queue()
+
+       
+        class QueueManager(BaseManager): pass
+        QueueManager.register('get_queue')
+        self.shared_memory = QueueManager(address=('127.0.0.1', 50000), authkey=b'abracadabra')
+        self.shared_memory.connect()
         
-    
+        
+    def update_shared_memory(self):
+        dico = self.shared_memory.get_queue()
+        
+        dico.update({"remy": "coucou", "johan": "yo"})
+        dico.update({"salut":1})
+        print("dans update :",dico)
+
+    def check_shared_memory(self):
+        queue = self.shared_memory.get_queue()
+        print("dans check : ",queue)
+
+
     def display_hands(self):
         for player, hand in self.hands:
             print(f"Player {player.player_id}'s hand: {hand}")
@@ -49,3 +68,8 @@ class Player:
 def signal_handler(signum, frame):
     # Handle signals, e.g., end of game
     pass
+
+if __name__ == "__main__":
+    p1 = Player("P1")
+    p1.update_shared_memory()
+    p1.check_shared_memory()
