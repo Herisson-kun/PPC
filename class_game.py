@@ -1,46 +1,55 @@
-import multiprocessing
 import threading
 import socket
 import queue
 import json
 import random
 import signal
-from class_player import Player
 from class_card import Card
+from multiprocessing.managers import BaseManager
 
 class Game():
-    def __init__(self, shared_memory):
+    def __init__(self):
 
         self.player_id_counter = 1
         self.players = {}
 
-        #self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        #self.server_socket.bind(('127.0.0.1', 8080))
-        #self.server_socket.listen(5)
+        # self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # self.server_socket.bind(('127.0.0.1', 8080))
+        # self.server_socket.listen(5)
         #print(f"Le jeu écoute sur 127.0.0.1:8080")
         self.player_sockets = {}  # Dictionnaire pour stocker les sockets des joueurs {player:socket}
         #self.accept_players()
 
-        self.shared_memory = shared_memory
-
+        self.shared_memory = dict()
         self.players_deck = []
         self.deck = [1, 1, 1, 2, 2, 3, 3, 4, 4, 5]
-
+        self.init_shared_memory()
+        self.create_deck()
 
     def init_shared_memory(self):
-        self.shared_memory["colors"] = ["blue", "red", "green", "yellow", "white"][:len(self.players)+2]
-        self.shared_memory["fuse_token"] = 3
-        self.shared_memory["info_token"] = len(self.players) + 3
-        self.shared_memory["deck"] = random.shuffle(self.deck)
-        self.shared_memory["suites"] = {f"{color}" : [] for color in self.shared_memory["colors"]}
+        class QueueManager(BaseManager): pass
+        QueueManager.register('get_memory')
+        m = QueueManager(address=('127.0.0.1', 50000), authkey=b'abracadabra')
+        m.connect()
+        self.shared_memory = m.get_memory()
+        print(self.shared_memory)
+        intermediate_data = dict()
+        intermediate_data["colors"] = ["blue", "red", "green", "yellow", "white"][:len(self.players)+2]
+        intermediate_data["fuse_token"] = 3
+        intermediate_data["info_token"] = len(self.players) + 3
+        intermediate_data["deck"] = random.shuffle(self.deck)
+        intermediate_data["suites"] = {f"{color}" : [] for color in intermediate_data["colors"]}
 
+        self.shared_memory.update(intermediate_data)
+        print(self.shared_memory)
+        
+    
     def create_deck(self):
-        for color in self.shared_memory["colors"]:
-            print (color)
+        for color in self.shared_memory.get("colors",0):
             for value in self.deck:
                 cardToAppend = Card(color,value)
                 self.players_deck.append(cardToAppend)
-        
+            print(self.players_deck)
         
 
     def accept_players(self):
@@ -110,15 +119,12 @@ class Game():
     def start_game(self):
         self.init_shared_memory()
         print("shared mem done")
-        self.create_deck()
+        """self.create_deck()
         for carte in self.players_deck:
             print(f"{carte.color} , {carte.number}")
         self.deal_hands()
-        print("hands dealt")
+        print("hands dealt")"""
         #self.game_process.start()
         #print("process game started")
 
-    def end_game(self):
-        # Handle end-of-game events
-        pass
-
+game = Game()
