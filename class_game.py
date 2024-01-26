@@ -52,7 +52,6 @@ class Game():
                 cardToAppend = Card(color,value)
                 deck.append(cardToAppend) 
         random.shuffle(deck)
-        print(len(deck))
         self.shared_memory.update({"deck": deck})       
 
     def accept_players(self):
