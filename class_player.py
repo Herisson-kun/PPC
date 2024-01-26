@@ -20,7 +20,7 @@ class Player:
         m.connect()
         self.shared_memory = m.get_memory()
         print(self.shared_memory)
-        self.receive_messages()
+        self.receive_message()
         print(self.shared_memory)
         self.show_hands()
 
@@ -138,7 +138,6 @@ class Player:
     def connect(self, host, port):
         self.socket.connect((host, port))
         print(f"Connecté au serveur {host}:{port}")
-        self.send_message(f"Hello")
 
     def send_message(self, message):
         try:
@@ -146,15 +145,9 @@ class Player:
         except socket.error as e:
             print(f"Erreur lors de l'envoi du message : {e}")
 
-    def receive_messages(self):
-        while True:
-            try:
-                data = self.socket.recv(1024)
-                if not data:
-                    break
-                print(f"Reçu du serveur : {data.decode('utf-8')}")
-            except:
-                break
+    def receive_message(self):
+        data = self.socket.recv(1024)
+        print(f"Reçu du serveur : {data.decode('utf-8')}")
 
     def signal_handler(signum, frame):
         # Handle signals, e.g., end of game
