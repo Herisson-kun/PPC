@@ -1,4 +1,5 @@
 import threading
+import multiprocessing
 import socket
 import queue
 import json
@@ -13,18 +14,25 @@ class Game():
         self.number_of_players = number_of_players
         self.player_id_counter = 1
         self.players = {}
+        self.numbers = [1, 1, 1, 2, 2, 3, 3, 4, 4, 5]
+
+        process_shared_memory = multiprocessing.Process(target=self.run_shared_memory)
+        process_shared_memory.start()
+
+        self.init_shared_memory()
+
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_socket.bind(('127.0.0.1', 8080))
         self.server_socket.listen(5)
         print(f"Le jeu écoute sur 127.0.0.1:8080")
         self.accept_players()
 
-        self.shared_memory = dict()
-        self.numbers = [1, 1, 1, 2, 2, 3, 3, 4, 4, 5]
-        self.init_shared_memory()
+        self.build_shared_memory()
         print(self.shared_memory)
         print(self)
-        self.send_message("salut", list(self.players.keys())[0])
+        print(self.players)
+        for player in self.players:
+            self.send_message("hello", player)
 
     def init_shared_memory(self):
         class MemoryManager(BaseManager): pass
@@ -35,6 +43,7 @@ class Game():
 
         print("initial shared_mem", self.shared_memory)
 
+    def build_shared_memory(self):
         intermediate_data = dict()
         intermediate_data["colors"] = ["blue", "red", "green", "yellow", "white"][:len(self.players)]
         intermediate_data["fuse_token"] = 3
@@ -44,6 +53,14 @@ class Game():
         self.shared_memory.update(intermediate_data)
         self.create_deck()
         self.deal_hands()
+
+    def run_shared_memory(self):
+        shared_memory = {"player_number" : {}}
+        class MemoryManager(BaseManager): pass
+        MemoryManager.register('get_memory', callable=lambda:shared_memory)
+        m_serv = MemoryManager(address=('127.0.0.1', 50000), authkey=b'abracadabra')
+        s_serv = m_serv.get_server()
+        s_serv.serve_forever()
     
     def create_deck(self):
         deck = []
@@ -55,13 +72,18 @@ class Game():
         self.shared_memory.update({"deck": deck})       
 
     def accept_players(self):
+        temp = {}
         while len(self.players)<self.number_of_players:
             player_socket, addr = self.server_socket.accept()
+
             player_id = addr[1]
             self.players[player_id] = player_socket
-            print(f"Connexion établie avec {player_id}")
+            temp[player_id] = self.player_id_counter
+            print(f"Connected to {player_id}, player{self.player_id_counter}")
+            self.player_id_counter += 1
             #player_handler = threading.Thread(target=self.handle_player, args=(player_socket, player_id))
             #player_handler.start()
+        self.shared_memory.update({"player_number" : temp})
         print("Everyone is connected, the game may begin")
 
     def handle_player(self, player_id, address):
@@ -125,5 +147,3 @@ class Game():
         print("hands dealt")"""
         #self.game_process.start()
         #print("process game started")
-
-game = Game(2)
