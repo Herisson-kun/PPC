@@ -30,7 +30,7 @@ class Player:
         i = 1
         for player in self.shared_memory.get("hands"):
             if player != self.player_id:
-                print(f"player{i}'s hand : {self.shared_memory.get("hands").get(player)}")
+                print(f"player{i}'s hand : {self.shared_memory.get('hands').get(player)}")
             i += 1
         
     def play(self, game, msg_queue):
