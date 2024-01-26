@@ -5,12 +5,12 @@ from multiprocessing.managers import BaseManager
 
 class Player:
     def __init__(self):
-        # player_id and player_socket
-        # self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        # self.connect('127.0.0.1', 8080)
-        # _, port = self.socket.getsockname()
-        # self.player_id = port
-        
+
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.connect('127.0.0.1', 8080)
+        _, port = self.socket.getsockname()
+        self.player_id = port
+                
         # shared_memory
         self.shared_memory ={}
 
@@ -20,9 +20,9 @@ class Player:
         m.connect()
         self.shared_memory = m.get_memory()
         print(self.shared_memory)
-        self.shared_memory.update({"remy": "coucou", "johan": "yo"})
-        self.shared_memory.update({"salut":1})
+        self.receive_messages()
         print(self.shared_memory)
+        print(self.shared_memory.get("hands").get(self.player_id))
 
         # self.message_queue = multiprocessing.Queue()
         
