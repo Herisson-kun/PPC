@@ -32,9 +32,15 @@ class Game():
         print(self.shared_memory)
         print(self)
         print(self.players)
+        
         for player in self.players:
             self.send_message("hello", player)
+
+        for player in self.players:
+            self.receive_message(player)
+
         self.run_game()
+        
 
     def init_shared_memory(self):
         class MemoryManager(BaseManager): pass
@@ -85,8 +91,9 @@ class Game():
             self.player_id_counter += 1
             #player_handler = threading.Thread(target=self.handle_player, args=(player_socket, player_id))
             #player_handler.start()
-        self.shared_memory.update({"player_number" : temp})
+        self.shared_memory.update({"player_number" : temp}) 
         print("Everyone is connected, the game may begin")
+        
 
     def handle_player(self, player_id, address):
         print(f"Joueur {player_id} connecté depuis {address}")
@@ -105,7 +112,9 @@ class Game():
 
     def send_message(self, message, dest):
         try:
+            #self.players[dest].shutdown(socket.SHUT_WR)
             self.players[dest].send(message.encode('utf-8'))
+            
         except socket.error as e:
             print(f"Erreur lors de l'envoi du message : {e}")
 
@@ -133,9 +142,13 @@ class Game():
     def run_game(self):
         who_plays = 0
         while True:
-            player = list(self.players.keys())[who_plays]
-            self.send_message("YOUR TURN\n", player)
-            action = self.receive_message(player, True)
+            player_playing = list(self.players.keys())[who_plays]
+            player_turn_number = who_plays + 1
+            player_turn_number = str(player_turn_number)
+            print("\nCest le tour du joueur : ", player_turn_number)
+            for player in self.players:
+                self.send_message(player_turn_number, player)
+            action = self.receive_message(player_playing, True)
             print(f"Player{self.shared_memory.get('player_number').get(player)} does : {action}")
             who_plays = (who_plays+1)%self.number_of_players
         
