@@ -1,6 +1,7 @@
 import multiprocessing
 import socket
 from multiprocessing.managers import BaseManager
+import random
 
 
 class Player:
@@ -19,55 +20,52 @@ class Player:
         m = MemoryManager(address=('127.0.0.1', 50000), authkey=b'abracadabra')
         m.connect()
         self.shared_memory = m.get_memory()
-        print(self.shared_memory)
+
         self.receive_message()
-        print(self.shared_memory)
-        self.show_hands()
+        
+        while True:
+            self.play()
 
         # self.message_queue = multiprocessing.Queue()
 
     def show_hands(self):
-        i = 1
         for player in self.shared_memory.get("hands"):
             if player != self.player_id:
-                print(f"player{i}'s hand : {self.shared_memory.get("hands").get(player)}")
-            i += 1
-        
-    def play(self, game, msg_queue):
+                print(f"player{self.shared_memory.get("player_number").get(player)}'s hand : {self.shared_memory.get("hands").get(player)}")
 
-        print(self.show_hands)
+    def play(self):
+
+        self.show_hands()
 
         message = self.socket.recv(1024).decode()
-        while message != "Your turn\n":
-            print(message)
-
+        while message != "YOUR TURN\n":
+            pass
+        self.show_hands()
         # game.self_lock.acquire()
-        while True:
-            choice = input("Enter the number of your choice: 1 to play card, 2 to give information\n")
-            if choice == 1 or  choice == 2:
-                break
-            else:
-                print("Enter a valid action!")
-            
-        if choice == 1:
-            
+        choice = self.input_choice()
+
+        if choice == str(1):
             while True:
                 card_number = self.input_number()
                 card_color = self.input_color()
-                card_choice = self.get_card(card_color, card_number)
-                if card_choice is not None:
-                    print(f"{card_color}:{card_number} is a valid choice.")
+                try:
+                    position, card_choice = self.input_position(card_color, card_number)
+                except:
+                    break
+                if self.is_playable(card_choice):
+                    playable = True
+                    self.play_card(playable, card_choice, position)
                     break
                 else:
-                    print("This card is not in your deck.")
-
-            self.shared_memory.get("hands").get(self.player_id).remove(card_choice)
-            print(self.shared_memory.get("hands").get(self.player_id))
-            self.socket.send(f"PLAY CARD".encode())
-            self.socket.send(card_choice.encode())
+                    playable = False
+                    self.play_card(playable, card_color, position)
+                    break
+            
+            print("Turn is done")
+            self.socket.send("DONE".encode())
 
                 
-        elif choice == 2:
+        """elif choice == 2:
             self.socket.send("GIVE INFORMATION".encode())
             other_players =[p for p in self.shared_memory["players"] if p != self.id]
             player_choice = input(f"Enter the number of the player among {other_players} you want to give information to \n")
@@ -86,69 +84,129 @@ class Player:
                     break
                 except:
                     print("Enter a valid number for type of information")
-        self.message_queue = multiprocessing.Queue()
-
-       
-        class QueueManager(BaseManager): pass
-        QueueManager.register('get_queue')
-        self.shared_memory = QueueManager(address=('127.0.0.1', 50000), authkey=b'abracadabra')
-        self.shared_memory.connect()
+        self.message_queue = multiprocessing.Queue()"""
         # game.self_lock.release()
+    
+    def draw_card(self):
+        deck = self.shared_memory.get("deck")
+        random_index = random.randint(0, len(deck) - 1)
+        random_card = deck.pop(random_index)
+        self.shared_memory.update({"deck" : deck})
+        return random_card
+
+    def input_choice(self):
+        while True:
+            choice = input("What will you do ? : 1 to play card, 2 to give information\n")
+            if choice == str(1) or  choice == str(2):
+                return choice
+            else:
+                print("Enter a valid action!")
         
     def input_number(self):
         while True:
-            number = int(input("Enter the number of the card you want to play : "))
-            if number > 0 and number < 6:
-                break
-            print("Enter a valid number !")
+            number = input("Enter the number of the card you want to play (1-5): ")
+            if number.isdigit():
+                number = int(number)
+                if 1 <= number <= 5:
+                    return number
+                else:
+                    print("Please enter a number between 1 and 5.")
+            else:
+                print("This is not a valid number.")
 
     def input_color(self):
         while True:
-            color = int(input("Enter the color of the card you want to play : "))
+            color = input("Enter the color of the card you want to play : ")
             if color in self.shared_memory.get("colors"):
-                break
-            print("Enter a valid color !")
+                return color
+            print("Enter a valid color.")
+        
+    def input_position(self, color, number):
+        while True:
+            position = input("Enter the position of the card you want to play (1-5): ")
+            if position.isdigit():
+                position = int(position)
+                if 1 <= position <= 5:
+                    break
+                else:
+                    print("Please enter a number between 1 and 5.")
+            else:
+                print("This is not a valid number.")
+        card = self.shared_memory.get("hands").get(self.player_id)[position-1]
+        if card.number == number and card.color == color:
+            return position, card
+        else: 
+            print(f"This card was : {[card]} ! You lost a fuse_token !")
+            self.lose_fuse_token()
+            self.remove_card_from_hand(card)
+            self.add_card_to_hand(position)
+        
     
-    def get_card(self, number, color):
+    def get_card_from_hand(self, color, number):
         for card in self.shared_memory.get("hands").get(self.player_id):
             if card.number == number and card.color == color:
                 return card
         return None
+    
+    def is_playable(self, card):
 
-    def update_shared_memory(self):
-        dico = self.shared_memory.get_queue()
-        
-        dico.update({"remy": "coucou", "johan": "yo"})
-        dico.update({"salut":1})
-        print("dans update :",dico)
+        if self.shared_memory.get("suites").get(card.color) == []:
+            return True if card.number == 1 else False
+        else:
+            return True if card.number == self.shared_memory.get("suites").get(card.color).pop().number + 1 else False
 
-    def check_shared_memory(self):
-        queue = self.shared_memory.get_queue()
-        print("dans check : ",queue)
+    def lose_fuse_token(self):
+        fuse_token = self.shared_memory.get("fuse_token") - 1
+        self.shared_memory.update({"fuse_token": fuse_token})
 
+    def remove_card_from_hand(self, position):
+        new_hand = self.shared_memory.get("hands").get(self.player_id)
+        print(new_hand)
+        new_hand.pop(position-1)
+        new_hands = self.shared_memory.get("hands")
+        new_hands[self.player_id] = new_hand
+        self.shared_memory.update({"hands" : new_hands})
 
-    def display_hands(self):
-        for player, hand in self.hands:
-            print(f"Player {player.player_id}'s hand: {hand}")
+    def add_card_to_hand(self, position):
+        random_card = self.draw_card()
+        new_hand = self.shared_memory.get("hands").get(self.player_id)
+        new_hand.insert(position-1, random_card)
+        new_hands = self.shared_memory.get("hands")
+        new_hands[self.player_id] = new_hand
+        self.shared_memory.update({"hands" : new_hands})
 
-    def run(self):
-        # Player interaction logic
-        pass
+    def add_card_to_suite(self, card):
+        color = card.color
+        new_suites = self.shared_memory.get("suites")
+        new_suites[color].append(card)
+        self.shared_memory.update({"suites" : new_suites})
+    
+    def play_card(self, playable, card, position):
+        if playable:
+            print(f"{card.color}:{card.number} is played.")
+            self.add_card_to_suite(card)
+        else:
+            print("This card is not playable... You lose a fuse_token.")
+            self.lose_fuse_token()
+            
+        self.remove_card_from_hand(position)
+        self.add_card_to_hand(position)
+
 
     def connect(self, host, port):
         self.socket.connect((host, port))
         print(f"Connecté au serveur {host}:{port}")
 
-    def send_message(self, message):
+    def send_message(self, message, dest):
         try:
-            self.socket.send(message.encode('utf-8'))
+            self.players[dest].send(message.encode('utf-8'))
         except socket.error as e:
             print(f"Erreur lors de l'envoi du message : {e}")
 
     def receive_message(self):
         data = self.socket.recv(1024)
-        print(f"Reçu du serveur : {data.decode('utf-8')}")
-
+        print(f"Received from server : {data.decode('utf-8')}")
+        
     def signal_handler(signum, frame):
         # Handle signals, e.g., end of game
         pass

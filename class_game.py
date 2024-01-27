@@ -7,6 +7,7 @@ import random
 import signal
 from class_card import Card
 from multiprocessing.managers import BaseManager
+import time
 
 class Game():
 
@@ -33,6 +34,7 @@ class Game():
         print(self.players)
         for player in self.players:
             self.send_message("hello", player)
+        self.run_game()
 
     def init_shared_memory(self):
         class MemoryManager(BaseManager): pass
@@ -107,15 +109,12 @@ class Game():
         except socket.error as e:
             print(f"Erreur lors de l'envoi du message : {e}")
 
-    def receive_messages(self):
-        while True:
-            try:
-                data = self.socket.recv(1024)
-                if not data:
-                    break
-                print(f"Reçu du serveur : {data.decode('utf-8')}")
-            except:
-                break
+    def receive_message(self, exp, _return_=False):
+        data = self.players[exp].recv(1024)
+        print(f"Reçu du joueur {self.shared_memory.get("player_number").get(exp)} : {data.decode('utf-8')}")
+        if _return_:
+            return data
+        
 
     def deal_hands(self):
         hands = {}
@@ -132,10 +131,14 @@ class Game():
         return random_card
 
     def run_game(self):
-        # Game logic implementation
+        who_plays = 0
+        while True:
+            player = list(self.players.keys())[who_plays]
+            self.send_message("YOUR TURN\n", player)
+            action = self.receive_message(player, True)
+            print(f"Player{self.shared_memory.get("player_number").get(player)} does : {action}")
+            who_plays = (who_plays+1)%self.number_of_players
         
-        pass
-
     def start_game(self):
         print("shared mem done")
         """self.create_deck()

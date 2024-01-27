@@ -9,7 +9,7 @@ player_socket, addr = server_socket.accept()
 player_id = addr[1]
 print(f"Connexion établie avec {player_id}")
 
-color = player_socket.recv(2000).decode()
-number = player_socket.recv(2000).decode()
+color = player_socket.recv(1024).decode()
+number = player_socket.recv(1024).decode()
 
 print(color, number)
