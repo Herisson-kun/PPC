@@ -28,7 +28,7 @@ class Player:
 
         message = self.receive_message()
         self.send_message( "hello")
-        print("echo hello")
+        
       
         
         self.connected_to_neighbor = False
@@ -36,18 +36,7 @@ class Player:
         self.init_network_message_queue()
 
         while True:
-            message = self.socket.recv(1024).decode().strip()
-            os.system('cls')
-            self.report_from_last_turn()
-            self.show_info()
-
-            if message == "YOUR TURN":
-                print("\n/IT'S YOUR TURN !/")
-                self.play()
-
-            if message.startswith("TURN OF PLAYER"):
-                player = message.split()[-1]
-                print(f"\n/IT'S {player}'S TURN !/")
+            self.play()
             
     def show_info(self):
         print("======== Turn Informations ========\n")
@@ -61,10 +50,7 @@ class Player:
         print("\nRemaining Tokens:")
         print(f"Info Token: {self.shared_memory.get('info_token')}")
         print(f"Fuse Token: {self.shared_memory.get('fuse_token')}")
-        print("\nRemaining Tokens:")
-        print(f"Info Token: {self.shared_memory.get('info_token')}")
-        print(f"Fuse Token: {self.shared_memory.get('fuse_token')}")
-
+        
         # Affichage des suites en construction
         print("\nSuites in the Making:")
         for color, suite in self.shared_memory.get("suites").items():
@@ -133,37 +119,37 @@ class Player:
         # game.self_lock.acquire()
             choice = self.input_choice()
 
-        if choice == str(1):
-            while True:
-                try:
-                    position, card_choice = self.input_position()
-                except:
-                    break
-                if self.is_playable(card_choice):
-                    playable = True
-                    self.play_card(playable, card_choice, position)
-                    break
-                else:
-                    playable = False
-                    self.play_card(playable, card_choice, position)
-                    break
+            if choice == str(1):
+                while True:
+                    try:
+                        position, card_choice = self.input_position()
+                    except:
+                        break
+                    if self.is_playable(card_choice):
+                        playable = True
+                        self.play_card(playable, card_choice, position)
+                        break
+                    else:
+                        playable = False
+                        self.play_card(playable, card_choice, position)
+                        break
+                
+                print("Turn is done")
+                self.socket.send("DONE".encode())
+
+            if choice == "2":
+                msg = input("message : ")
             
-            print("Turn is done")
-            self.socket.send("DONE".encode())
+                self.mq.send(msg)
+                if self.connected_to_neighbor == True:
+                    self.mq_neighbor.send(msg)
+                print("Turn is done")
+                self.socket.send("DONE".encode())
 
-        if choice == "2":
-            msg = input("message : ")
-        
-            self.mq.send(msg)
-            if self.connected_to_neighbor == True:
-                self.mq_neighbor.send(msg)
-            print("Turn is done")
-            self.socket.send("DONE".encode())
-
-        if choice == "3":
-            self.mq.remove()
-            print("Turn is done")
-            self.socket.send("DONE".encode())
+            if choice == "3":
+                self.mq.remove()
+                print("Turn is done")
+                self.socket.send("DONE".encode())
             
     
     def draw_card(self):
