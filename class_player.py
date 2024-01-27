@@ -3,6 +3,9 @@ import socket
 import os
 from multiprocessing.managers import BaseManager
 import random
+import sysv_ipc
+import sys 
+
 
 class Player:
     def __init__(self):
@@ -23,8 +26,15 @@ class Player:
         m.connect()
         self.shared_memory = m.get_memory()
 
-        self.receive_message()
+        message = self.receive_message()
+        self.send_message( "hello")
+        print("echo hello")
+      
         
+        self.connected_to_neighbor = False
+
+        self.init_network_message_queue()
+
         while True:
             message = self.socket.recv(1024).decode().strip()
             os.system('cls')
@@ -51,6 +61,9 @@ class Player:
         print("\nRemaining Tokens:")
         print(f"Info Token: {self.shared_memory.get('info_token')}")
         print(f"Fuse Token: {self.shared_memory.get('fuse_token')}")
+        print("\nRemaining Tokens:")
+        print(f"Info Token: {self.shared_memory.get('info_token')}")
+        print(f"Fuse Token: {self.shared_memory.get('fuse_token')}")
 
         # Affichage des suites en construction
         print("\nSuites in the Making:")
@@ -58,6 +71,27 @@ class Player:
             print(f"Suite {color}: {suite}")
 
         print("\n====================================")
+
+
+    def init_network_message_queue(self):
+        self.key = self.shared_memory.get("player_number").get(self.player_id)
+        print("my key : ", self.key)
+        try:
+            self.mq = sysv_ipc.MessageQueue(self.key, sysv_ipc.IPC_CREX)
+        except:
+            print("Message queue", self.key, "already exsits.")
+
+        if self.key !=1:
+            key_neighbor = self.key - 1
+            self.mq_neighbor = sysv_ipc.MessageQueue(key_neighbor)
+            print("success link with player", key_neighbor)
+            self.connected_to_neighbor = True
+   
+
+        
+
+        #for player in self.shared_memory.get('player_number'):
+
 
     def report_from_last_turn(self):
         print("====== Report From Last Turn ======\n")
@@ -67,8 +101,37 @@ class Player:
 
     def play(self):
 
+        self.show_info()
+        serv_message = self.socket.recv(1024)
+        serv_message = serv_message.decode('utf-8')
+        print ("serv msg : ", serv_message)
+        serv_message = int(serv_message)
+
+        if serv_message != self.key:
+            print("It's Player ", serv_message, "turn")
+            serv_message = int(serv_message)
+            if serv_message > self.key:
+                
+                msg, _  = self.mq.receive()
+                msg = msg.decode()
+                print("clue from ", self.key + 1, " : ", msg) #msg = indice recu
+                if self.connected_to_neighbor == True:
+                    self.mq_neighbor.send(msg)
+            else:
+                msg, _  = self.mq_neighbor.receive()
+                msg = msg.decode()
+                print("clue from ", self.key - 1, " : ", msg)
+                #todo - rajouter une condition si on est le joueur le plus élevé pour éviter de remplir une msg q pour rien
+                self.mq.send(msg)
+            
+
+
+        #viens au lieu d'envoyer turn of Player X on envoit juste X
+        #Comme ca je sais à qui cest le tour
+        else:
+
         # game.self_lock.acquire()
-        choice = self.input_choice()
+            choice = self.input_choice()
 
         if choice == str(1):
             while True:
@@ -88,28 +151,20 @@ class Player:
             print("Turn is done")
             self.socket.send("DONE".encode())
 
-                
-        """elif choice == 2:
-            self.socket.send("GIVE INFORMATION".encode())
-            other_players =[p for p in self.shared_memory["players"] if p != self.id]
-            player_choice = input(f"Enter the number of the player among {other_players} you want to give information to \n")
-            while True:
-                try:
-                    player_choice = int(player_choice)
-                    break
-                except:
-                    print("Enter a valid number for player that you want to give information to")            
+        if choice == "2":
+            msg = input("message : ")
+        
+            self.mq.send(msg)
+            if self.connected_to_neighbor == True:
+                self.mq_neighbor.send(msg)
+            print("Turn is done")
+            self.socket.send("DONE".encode())
+
+        if choice == "3":
+            self.mq.remove()
+            print("Turn is done")
+            self.socket.send("DONE".encode())
             
-            #print(cards_info)
-            info_choice = input(f"Enter the type of the information you want to give, 1 for color, 2 for number\n")
-            while True:
-                try:
-                    info_choice = int(info_choice)
-                    break
-                except:
-                    print("Enter a valid number for type of information")
-        self.message_queue = multiprocessing.Queue()"""
-        # game.self_lock.release()
     
     def draw_card(self):
         deck = self.shared_memory.get("deck")
@@ -208,15 +263,16 @@ class Player:
         self.socket.connect((host, port))
         print(f"Connecté au serveur {host}:{port}")
 
-    def send_message(self, message, dest):
+    def send_message(self, message):
         try:
-            self.players[dest].send(message.encode('utf-8'))
+            self.socket.send(message.encode('utf-8'))
         except socket.error as e:
             print(f"Erreur lors de l'envoi du message : {e}")
 
     def receive_message(self):
         data = self.socket.recv(1024)
         print(f"Received from server : {data.decode('utf-8')}")
+        
         
     def signal_handler(signum, frame):
         # Handle signals, e.g., end of game

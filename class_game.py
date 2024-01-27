@@ -27,9 +27,15 @@ class Game():
         print(self.shared_memory)
         print(self)
         print(self.players)
+        
         for player in self.players:
             self.send_message("hello", player)
+
+        for player in self.players:
+            self.receive_message(player)
+
         self.run_game()
+        
 
 
     def init_shared_memory(self):
@@ -102,7 +108,9 @@ class Game():
 
     def send_message(self, message, dest):
         try:
+            #self.players[dest].shutdown(socket.SHUT_WR)
             self.players[dest].send(message.encode('utf-8'))
+            
         except socket.error as e:
             print(f"Erreur lors de l'envoi du message : {e}")
 
@@ -116,13 +124,12 @@ class Game():
     def run_game(self):
         who_plays = 0
         while True:
-            player_who_plays = list(self.players.keys())[who_plays]
-            player_number = self.shared_memory.get('player_number').get(player_who_plays)
-            for player in list(self.players.keys()):
-                if player == player_who_plays:
-                    self.send_message("YOUR TURN\n", player)
-                else:
-                    self.send_message(f"TURN OF PLAYER{player_number}", player)
-            message = self.receive_message(player_who_plays, True)
-            print(f"Player{player_number} ({player_who_plays} : {message})")
+            player_playing = list(self.players.keys())[who_plays]
+            player_turn_number = who_plays + 1
+            player_turn_number = str(player_turn_number)
+            print("\nCest le tour du joueur : ", player_turn_number)
+            for player in self.players:
+                self.send_message(player_turn_number, player)
+            action = self.receive_message(player_playing, True)
+            print(f"Player{self.shared_memory.get('player_number').get(player)} does : {action}")
             who_plays = (who_plays+1)%self.number_of_players
