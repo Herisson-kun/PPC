@@ -1,4 +1,3 @@
-Changer l'action play a card. Pas besoin de bien la guess pour qu'elle soit ajoutée à une suite
 Changer give info pour ne pas pouvoir donner n'importe quelle info
 signaux pour mettre fin au jeu !!!!!
 info token
