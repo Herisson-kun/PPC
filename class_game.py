@@ -1,13 +1,8 @@
-import threading
-import multiprocessing
 import socket
-import queue
-import json
 import random
 import signal
 from class_card import Card
 from multiprocessing.managers import BaseManager
-import time
 
 class Game():
 
@@ -36,6 +31,7 @@ class Game():
             self.send_message("hello", player)
         self.run_game()
 
+
     def init_shared_memory(self):
         class MemoryManager(BaseManager): pass
         MemoryManager.register('get_memory')
@@ -63,7 +59,8 @@ class Game():
         m_serv = MemoryManager(address=('127.0.0.1', 50000), authkey=b'abracadabra')
         s_serv = m_serv.get_server()
         s_serv.serve_forever()
-    
+
+
     def create_deck(self):
         deck = []
         for color in self.shared_memory.get('colors'):
@@ -71,7 +68,22 @@ class Game():
                 cardToAppend = Card(color,value)
                 deck.append(cardToAppend) 
         random.shuffle(deck)
-        self.shared_memory.update({"deck": deck})       
+        self.shared_memory.update({"deck": deck})
+    
+    def draw_card(self):
+        deck = self.shared_memory.get('deck')
+        random_index = random.randint(0, len(deck) - 1)
+        random_card = deck.pop(random_index)
+        self.shared_memory.update({"deck" : deck})
+        return random_card
+    
+    def deal_hands(self):
+        hands = {}
+        for player in self.players:
+            hand = [self.draw_card() for _ in range(5)]
+            hands.update({player : hand})
+        self.shared_memory.update({"hands" : hands})  
+
 
     def accept_players(self):
         temp = {}
@@ -83,24 +95,9 @@ class Game():
             temp[player_id] = self.player_id_counter
             print(f"Connected to {player_id}, player{self.player_id_counter}")
             self.player_id_counter += 1
-            #player_handler = threading.Thread(target=self.handle_player, args=(player_socket, player_id))
-            #player_handler.start()
+            
         self.shared_memory.update({"player_number" : temp})
         print("Everyone is connected, the game may begin")
-
-    def handle_player(self, player_id, address):
-        print(f"Joueur {player_id} connecté depuis {address}")
-
-        while True:
-            # Handle communication with the player here
-            data = self.player_sockets[player_id].socket.recv(1024)
-            if not data:
-                break  # Player disconnected
-            print(f"Received from Joueur {player_id}: {data.decode()}")
-
-        # Clean up when player disconnects
-        print(f"Joueur {player_id} déconnecté")
-        socket.close()
 
 
     def send_message(self, message, dest):
@@ -114,39 +111,18 @@ class Game():
         print(f"Reçu du joueur {self.shared_memory.get('player_number').get(exp)} : {data.decode('utf-8')}")
         if _return_:
             return data
-        
 
-    def deal_hands(self):
-        hands = {}
-        for player in self.players:
-            hand = [self.draw_card() for _ in range(5)]
-            hands.update({player : hand})
-        self.shared_memory.update({"hands" : hands})  
-  
-    def draw_card(self):
-        deck = self.shared_memory.get('deck')
-        random_index = random.randint(0, len(deck) - 1)
-        random_card = deck.pop(random_index)
-        self.shared_memory.update({"deck" : deck})
-        return random_card
 
     def run_game(self):
         who_plays = 0
         while True:
-            player = list(self.players.keys())[who_plays]
-            self.send_message("YOUR TURN\n", player)
-            action = self.receive_message(player, True)
-            print(f"Player{self.shared_memory.get('player_number').get(player)} does : {action}")
+            player_who_plays = list(self.players.keys())[who_plays]
+            player_number = self.shared_memory.get('player_number').get(player_who_plays)
+            for player in list(self.players.keys()):
+                if player == player_who_plays:
+                    self.send_message("YOUR TURN\n", player)
+                else:
+                    self.send_message(f"TURN OF PLAYER{player_number}", player)
+            message = self.receive_message(player_who_plays, True)
+            print(f"Player{player_number} ({player_who_plays} : {message})")
             who_plays = (who_plays+1)%self.number_of_players
-        
-    def start_game(self):
-        print("shared mem done")
-        """self.create_deck()
-        self.create_deck()
-        for carte in self.players_deck:
-            print(f"{carte.color} , {carte.number}")
-        self.deal_hands()
-        print("hands dealt")
-        print("hands dealt")"""
-        #self.game_process.start()
-        #print("process game started")

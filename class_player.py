@@ -1,8 +1,8 @@
 import multiprocessing
 import socket
+import os
 from multiprocessing.managers import BaseManager
 import random
-
 
 class Player:
     def __init__(self):
@@ -11,6 +11,8 @@ class Player:
         self.connect('127.0.0.1', 8080)
         _, port = self.socket.getsockname()
         self.player_id = port
+
+        self.report_messages = []
                 
         # shared_memory
         self.shared_memory ={}
@@ -24,49 +26,54 @@ class Player:
         self.receive_message()
         
         while True:
-            self.play()
+            message = self.socket.recv(1024).decode().strip()
+            os.system('cls')
+            self.report_from_last_turn()
+            self.show_info()
 
-        # self.message_queue = multiprocessing.Queue()
+            if message == "YOUR TURN":
+                print("\n/IT'S YOUR TURN !/")
+                self.play()
+
+            if message.startswith("TURN OF PLAYER"):
+                player = message.split()[-1]
+                print(f"\n/IT'S {player}'S TURN !/")
             
     def show_info(self):
-        print("==== Turn Informations ====")
+        print("======== Turn Informations ========\n")
         
         # Affichage des mains des autres joueurs
-        print("\nOther Players' Hands:")
         for player in self.shared_memory.get("hands"):
             if player != self.player_id:
                 print(f"player{self.shared_memory.get('player_number').get(player)}'s hand : {self.shared_memory.get('hands').get(player)}")
 
         # Affichage des jetons restants
-        print("n\Remaining Tokens:")
-        print(f"Info Token: {self.shared_memory.get('token_info')}")
-        print(f"Fuse Token: {self.shared_memory.get('token_fuse')}")
+        print("\nRemaining Tokens:")
+        print(f"Info Token: {self.shared_memory.get('info_token')}")
+        print(f"Fuse Token: {self.shared_memory.get('fuse_token')}")
 
         # Affichage des suites en construction
         print("\nSuites in the Making:")
         for color, suite in self.shared_memory.get("suites").items():
             print(f"Suite {color}: {suite}")
 
-        print("============================")
+        print("\n====================================")
 
+    def report_from_last_turn(self):
+        print("====== Report From Last Turn ======\n")
+        for message in self.report_messages:
+            print(message)
+        print("\n===================================")
 
     def play(self):
-
-        self.show_info()
-
-        message = self.socket.recv(1024).decode()
-        while message != "YOUR TURN\n":
-            pass
 
         # game.self_lock.acquire()
         choice = self.input_choice()
 
         if choice == str(1):
             while True:
-                card_number = self.input_number()
-                card_color = self.input_color()
                 try:
-                    position, card_choice = self.input_position(card_color, card_number)
+                    position, card_choice = self.input_position()
                 except:
                     break
                 if self.is_playable(card_choice):
@@ -75,13 +82,11 @@ class Player:
                     break
                 else:
                     playable = False
-                    self.play_card(playable, card_color, position)
+                    self.play_card(playable, card_choice, position)
                     break
             
             print("Turn is done")
             self.socket.send("DONE".encode())
-
-        self.show_info()
 
                 
         """elif choice == 2:
@@ -140,7 +145,7 @@ class Player:
                 return color
             print("Enter a valid color.")
         
-    def input_position(self, color, number):
+    def input_position(self):
         while True:
             position = input("Enter the position of the card you want to play (1-5): ")
             if position.isdigit():
@@ -152,20 +157,7 @@ class Player:
             else:
                 print("This is not a valid number.")
         card = self.shared_memory.get("hands").get(self.player_id)[position-1]
-        if card.number == number and card.color == color:
-            return position, card
-        else: 
-            print(f"This card was : {[card]} ! You lost a fuse_token !")
-            self.lose_fuse_token()
-            self.remove_card_from_hand(card)
-            self.add_card_to_hand(position)
-        
-    
-    def get_card_from_hand(self, color, number):
-        for card in self.shared_memory.get("hands").get(self.player_id):
-            if card.number == number and card.color == color:
-                return card
-        return None
+        return position, card
     
     def is_playable(self, card):
 
@@ -180,7 +172,6 @@ class Player:
 
     def remove_card_from_hand(self, position):
         new_hand = self.shared_memory.get("hands").get(self.player_id)
-        print(new_hand)
         new_hand.pop(position-1)
         new_hands = self.shared_memory.get("hands")
         new_hands[self.player_id] = new_hand
@@ -193,6 +184,7 @@ class Player:
         new_hands = self.shared_memory.get("hands")
         new_hands[self.player_id] = new_hand
         self.shared_memory.update({"hands" : new_hands})
+        self.report_messages.append(f"The card {[random_card]} has been added to your hand at position {position}.")
 
     def add_card_to_suite(self, card):
         color = card.color
@@ -202,10 +194,10 @@ class Player:
     
     def play_card(self, playable, card, position):
         if playable:
-            print(f"{card.color}:{card.number} is played.")
+            self.report_messages.append(f"{[card]} has been added to the {card.color} suite !")
             self.add_card_to_suite(card)
         else:
-            print("This card is not playable... You lose a fuse_token.")
+            self.report_messages.append(f"The card {[card]} is not playable... You lose a fuse_token.")
             self.lose_fuse_token()
             
         self.remove_card_from_hand(position)
