@@ -17,8 +17,8 @@ class Game():
         self.players = {}
         self.numbers = [1, 1, 1, 2, 2, 3, 3, 4, 4, 5]
 
-        process_shared_memory = multiprocessing.Process(target=self.run_shared_memory)
-        process_shared_memory.start()
+        #process_shared_memory = multiprocessing.Process(target=self.run_shared_memory)
+        #process_shared_memory.start()
 
         self.init_shared_memory()
 
