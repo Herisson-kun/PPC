@@ -27,20 +27,37 @@ class Player:
             self.play()
 
         # self.message_queue = multiprocessing.Queue()
-
-    def show_hands(self):
+            
+    def show_info(self):
+        print("==== Turn Informations ====")
+        
+        # Affichage des mains des autres joueurs
+        print("\nOther Players' Hands:")
         for player in self.shared_memory.get("hands"):
             if player != self.player_id:
-                print(f"player{self.shared_memory.get("player_number").get(player)}'s hand : {self.shared_memory.get("hands").get(player)}")
+                print(f"player{self.shared_memory.get('player_number').get(player)}'s hand : {self.shared_memory.get('hands').get(player)}")
+
+        # Affichage des jetons restants
+        print("n\Remaining Tokens:")
+        print(f"Info Token: {self.shared_memory.get('token_info')}")
+        print(f"Fuse Token: {self.shared_memory.get('token_fuse')}")
+
+        # Affichage des suites en construction
+        print("\nSuites in the Making:")
+        for color, suite in self.shared_memory.get("suites").items():
+            print(f"Suite {color}: {suite}")
+
+        print("============================")
+
 
     def play(self):
 
-        self.show_hands()
+        self.show_info()
 
         message = self.socket.recv(1024).decode()
         while message != "YOUR TURN\n":
             pass
-        self.show_hands()
+
         # game.self_lock.acquire()
         choice = self.input_choice()
 
@@ -63,6 +80,8 @@ class Player:
             
             print("Turn is done")
             self.socket.send("DONE".encode())
+
+        self.show_info()
 
                 
         """elif choice == 2:

@@ -66,7 +66,7 @@ class Game():
     
     def create_deck(self):
         deck = []
-        for color in self.shared_memory.get("colors",0):
+        for color in self.shared_memory.get('colors'):
             for value in self.numbers:
                 cardToAppend = Card(color,value)
                 deck.append(cardToAppend) 
@@ -111,7 +111,7 @@ class Game():
 
     def receive_message(self, exp, _return_=False):
         data = self.players[exp].recv(1024)
-        print(f"Reçu du joueur {self.shared_memory.get("player_number").get(exp)} : {data.decode('utf-8')}")
+        print(f"Reçu du joueur {self.shared_memory.get('player_number').get(exp)} : {data.decode('utf-8')}")
         if _return_:
             return data
         
@@ -124,7 +124,7 @@ class Game():
         self.shared_memory.update({"hands" : hands})  
   
     def draw_card(self):
-        deck = self.shared_memory.get("deck")
+        deck = self.shared_memory.get('deck')
         random_index = random.randint(0, len(deck) - 1)
         random_card = deck.pop(random_index)
         self.shared_memory.update({"deck" : deck})
@@ -136,7 +136,7 @@ class Game():
             player = list(self.players.keys())[who_plays]
             self.send_message("YOUR TURN\n", player)
             action = self.receive_message(player, True)
-            print(f"Player{self.shared_memory.get("player_number").get(player)} does : {action}")
+            print(f"Player{self.shared_memory.get('player_number').get(player)} does : {action}")
             who_plays = (who_plays+1)%self.number_of_players
         
     def start_game(self):
