@@ -167,8 +167,50 @@ class Player:
                 print("Turn is done")
                 self.socket.send("DONE".encode())
 
-            if choice == str(2):
-                msg = input("Give your information here : ")
+            if choice == str(2): #rajouter un while pour ne pas pouvoir rentrer autre chose que ce qui est voulu
+                kind_of_clue = input("Choose which kind of information you wanted to give : \n1: Clue about a single color\n2: Clue about a single number\n")
+                while kind_of_clue not in ["1","2"]:
+                    kind_of_clue = input("Please enter 1 or 2 ")
+                if kind_of_clue == str(1):
+                    color = input("Enter the color : ")
+                    while color not in self.shared_memory.get("colors"):
+                        color = input("Enter a valid color : ")
+                    positions = []
+                    number_of_clues = input("Enter the number of cards you wanted to give information about ")
+                    while number_of_clues not in ["1","2","3","4","5"]:
+                        number_of_clues = input("Enter a valid number : ")
+                    number_of_clues = int(number_of_clues)
+                    for i in range(number_of_clues):
+                        
+                        position = input("Enter the position of the card ")
+                        while position not in ["1","2","3","4","5"] or int(position) in positions:                            
+                            position = input("Enter a valid number ")
+
+                        position = int(position)
+                        positions.append(position)
+
+                    msg = (f"You have {number_of_clues} {color} cards in your hand. Their positions are {positions}")
+
+                if kind_of_clue == str(2):
+                    number = input("Enter the number :")
+                    while number not in ["1","2","3","4","5"]:
+                        number = input("Enter a valid number : ")
+                    positions = []
+                    number_of_clues = input("Enter the number of card(s) you wanted to give information about ")
+                    while number_of_clues not in ["1","2","3","4","5"]:
+                        number_of_clues = input("Enter a valid number : ")
+                    number_of_clues = int(number_of_clues)
+                    for i in range(number_of_clues):
+                        
+                        position = input("Enter the position of the card ")
+                        while position not in ["1","2","3","4","5"] or int(position) in positions:             
+                            position = input("Enter a valid number ")                                     
+                            
+                        position = int(position)
+                        positions.append(position)
+
+                    msg = (f"You have {number_of_clues} card(s) with the number {number} in your hand. Their positions are {positions}")
+
                 self.mq.send(msg)
                 self.lose_info_token()
                 self.report_messages.append(f"You said : {msg}")
