@@ -1,10 +1,10 @@
-import multiprocessing
 import socket
-import os
 from multiprocessing.managers import BaseManager
 import random
 import sysv_ipc
-import sys 
+import os
+from class_lock import Lock
+
 
 
 class Player:
@@ -14,28 +14,19 @@ class Player:
         self.connect('127.0.0.1', 8080)
         _, port = self.socket.getsockname()
         self.player_id = port
-
-        self.report_messages = []
                 
         # shared_memory
         self.shared_memory ={}
+        self.init_shared_memory()
 
-        class MemoryManager(BaseManager): pass
-        MemoryManager.register('get_memory'),  
-        m = MemoryManager(address=('127.0.0.1', 50000), authkey=b'abracadabra')
-        m.connect()
-        self.shared_memory = m.get_memory()
-
-        message = self.receive_message()
+        self.receive_message()
         self.send_message( "hello")
         
-      
-        
         self.connected_to_neighbor = False
-
         self.init_network_message_queue()
 
         while True:
+            self.report_messages = []
             self.play()
             
     def show_info(self):
@@ -58,6 +49,19 @@ class Player:
 
         print("\n====================================")
 
+    def report_from_last_turn(self):
+            print("====== Report From Last Turn ======\n")
+            for message in self.report_messages:
+                print(message)
+            print("\n===================================")
+
+
+    def init_shared_memory(self):
+        class MemoryManager(BaseManager): pass
+        MemoryManager.register('get_memory'),  
+        m = MemoryManager(address=('127.0.0.1', 50000), authkey=b'abracadabra')
+        m.connect()
+        self.shared_memory = m.get_memory()
 
     def init_network_message_queue(self):
         self.key = self.shared_memory.get("player_number").get(self.player_id)
@@ -79,44 +83,39 @@ class Player:
         #for player in self.shared_memory.get('player_number'):
 
 
-    def report_from_last_turn(self):
-        print("====== Report From Last Turn ======\n")
-        for message in self.report_messages:
-            print(message)
-        print("\n===================================")
-
     def play(self):
 
+        lock = self.shared_memory.get("lock")
+        print(lock.value)
         self.show_info()
-        serv_message = self.socket.recv(1024)
-        serv_message = serv_message.decode('utf-8')
-        print ("serv msg : ", serv_message)
-        serv_message = int(serv_message)
+        who_plays = self.socket.recv(1024).decode('utf-8')
+        who_plays = int(who_plays)
 
-        if serv_message != self.key:
-            print("It's Player ", serv_message, "turn")
-            serv_message = int(serv_message)
-            if serv_message > self.key:
+        if who_plays != self.key:
+            print(f"/IT'S PLAYER{who_plays}'S TURN !/")
+            who_plays = int(who_plays)
+            if who_plays > self.key:
                 
                 msg, _  = self.mq.receive()
                 msg = msg.decode()
-                print("clue from ", self.key + 1, " : ", msg) #msg = indice recu
+                self.report_messages.append("clue from ", self.key + 1, " : ", msg)
                 if self.connected_to_neighbor == True:
                     self.mq_neighbor.send(msg)
             else:
                 msg, _  = self.mq_neighbor.receive()
                 msg = msg.decode()
-                print("clue from ", self.key - 1, " : ", msg)
+                self.report_messages.append("clue from ", self.key + 1, " : ", msg)
                 #todo - rajouter une condition si on est le joueur le plus élevé pour éviter de remplir une msg q pour rien
                 self.mq.send(msg)
-            
-
-
-        #viens au lieu d'envoyer turn of Player X on envoit juste X
-        #Comme ca je sais à qui cest le tour
         else:
+            
+            lock = self.shared_memory.get("lock")
+            print(lock.value)
+            lock.acquire()
+            self.shared_memory.update({"lock" : lock})
+            print("lock acquired", self.shared_memory.get("lock").value)
 
-        # game.self_lock.acquire()
+            print("/IT'S YOUR TURN !/")
             choice = self.input_choice()
 
             if choice == str(1):
@@ -150,6 +149,12 @@ class Player:
                 self.mq.remove()
                 print("Turn is done")
                 self.socket.send("DONE".encode())
+
+            lock.acquire()
+            self.shared_memory.update({"lock" : lock})
+            print("lock released", self.shared_memory.get("lock").value)
+
+
             
     
     def draw_card(self):

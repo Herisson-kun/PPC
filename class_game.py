@@ -1,8 +1,11 @@
+import threading
+import multiprocessing
 import socket
 import random
 import signal
 from class_card import Card
 from multiprocessing.managers import BaseManager
+from class_lock import Lock
 
 class Game():
 
@@ -12,10 +15,10 @@ class Game():
         self.players = {}
         self.numbers = [1, 1, 1, 2, 2, 3, 3, 4, 4, 5]
 
-        #process_shared_memory = multiprocessing.Process(target=self.run_shared_memory)
-        #process_shared_memory.start()
-
-        self.init_shared_memory()
+        lock = threading.Lock()
+        thread_shared_memory = threading.Thread(target=self.run_shared_memory, args=(lock,))
+        thread_shared_memory.start()
+        self.init_shared_memory(lock)
 
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_socket.bind(('127.0.0.1', 8080))
@@ -25,8 +28,6 @@ class Game():
 
         self.build_shared_memory()
         print(self.shared_memory)
-        print(self)
-        print(self.players)
         
         for player in self.players:
             self.send_message("hello", player)
@@ -38,17 +39,19 @@ class Game():
         
 
 
-    def init_shared_memory(self):
+    def init_shared_memory(self, lock):
+        lock.acquire()
         class MemoryManager(BaseManager): pass
         MemoryManager.register('get_memory')
         m = MemoryManager(address=('127.0.0.1', 50000), authkey=b'abracadabra')
         m.connect()
         self.shared_memory = m.get_memory()
-
         print("initial shared_mem", self.shared_memory)
+        lock.release()
 
     def build_shared_memory(self):
         intermediate_data = dict()
+        intermediate_data["lock"] = Lock()
         intermediate_data["colors"] = ["blue", "red", "green", "yellow", "white"][:len(self.players)]
         intermediate_data["fuse_token"] = 3
         intermediate_data["info_token"] = len(self.players) + 3
@@ -58,12 +61,14 @@ class Game():
         self.create_deck()
         self.deal_hands()
 
-    def run_shared_memory(self):
+    def run_shared_memory(self, lock):
+        lock.acquire()
         shared_memory = {"player_number" : {}}
         class MemoryManager(BaseManager): pass
         MemoryManager.register('get_memory', callable=lambda:shared_memory)
         m_serv = MemoryManager(address=('127.0.0.1', 50000), authkey=b'abracadabra')
         s_serv = m_serv.get_server()
+        lock.release()
         s_serv.serve_forever()
 
 
