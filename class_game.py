@@ -51,7 +51,7 @@ class Game():
 
     def build_shared_memory(self):
         intermediate_data = dict()
-        intermediate_data["turn"] = 1
+        intermediate_data["turn"] = 0
         intermediate_data["lock"] = Lock()
         intermediate_data["colors"] = ["blue", "red", "green", "yellow", "white"][:len(self.players)]
         intermediate_data["fuse_token"] = 3
@@ -140,19 +140,21 @@ class Game():
         current_turn = self.shared_memory.get("turn")
         next_turn = current_turn + 1
         self.shared_memory.update({"turn": next_turn})
+        print("turn number : ", next_turn)
 
     def run_game(self):
         who_plays = 0
         while True:
+            self.update_turn()
             player_playing = list(self.players.keys())[who_plays]
             player_turn_number = who_plays + 1
             player_turn_number = str(player_turn_number)
             print("\nCest le tour du joueur : ", player_turn_number)
-
+            
             for player in self.players:
                 self.send_message(player_turn_number, player)
-
+            
             is_done = self.receive_message(player_playing, True)
 
             who_plays = (who_plays+1)%self.number_of_players
-            self.update_turn()
+            

@@ -26,11 +26,11 @@ class Player:
         self.connected_to_neighbor = False
         self.init_network_message_queue()
         self.report_messages = []
-        while True:
-            self.report_from_last_turn()
-            self.show_info()
-            self.report_messages = []
+
+        while True:            
             self.play()
+            #self.shared
+                        
             
     def show_info(self):
         print("======== Turn Informations ========")
@@ -59,10 +59,12 @@ class Player:
         print("\n====================================")
 
     def report_from_last_turn(self):
-            print("====== Report From Last Turn ======\n")
-            for message in self.report_messages:
-                print(message)
-            print("\n===================================")
+            print("turn turn", self.shared_memory.get("turn"))
+            if self.shared_memory.get("turn") !=1:
+                print("====== Report From Last Turn ======\n")
+                for message in self.report_messages:
+                    print(message)
+                print("\n===================================")
 
 
     def init_shared_memory(self):
@@ -74,7 +76,7 @@ class Player:
 
     def init_network_message_queue(self):
         self.key = self.shared_memory.get("player_number").get(self.player_id)
-        print("my key : ", self.key)
+        print("You are Player", self.key)
         try:
             self.mq = sysv_ipc.MessageQueue(self.key, sysv_ipc.IPC_CREX)
         except:
@@ -83,7 +85,7 @@ class Player:
         if self.key !=1:
             key_neighbor = self.key - 1
             self.mq_neighbor = sysv_ipc.MessageQueue(key_neighbor)
-            print("success link with player", key_neighbor)
+            #print("success link with player", key_neighbor)
             self.connected_to_neighbor = True
    
 
@@ -95,11 +97,15 @@ class Player:
     def play(self):
 
         lock = self.shared_memory.get("lock")
-        print(lock.value)
-        self.report_from_last_turn()
-        self.show_info()
+        
+        
+        
         who_plays = self.socket.recv(1024).decode('utf-8')
         who_plays = int(who_plays)
+
+        self.report_from_last_turn()
+        self.report_messages = []
+        self.show_info()
 
         if who_plays != self.key:
             print(f"/IT'S PLAYER{who_plays}'S TURN !/")
@@ -108,7 +114,7 @@ class Player:
                 
                 msg, _  = self.mq.receive()
                 msg = msg.decode()
-                report_messages = f"clue from  {who_plays} :  {msg}"
+                report_messages = f"Player{who_plays} {msg}"
                 
                 report_messages = str(report_messages)
                 
@@ -118,7 +124,7 @@ class Player:
             else:
                 msg, _  = self.mq_neighbor.receive()
                 msg = msg.decode()
-                report_messages = f"clue from  {who_plays} :  {msg}"
+                report_messages = f"Player{who_plays} {msg}"
                 
                 
                 self.report_messages.append(report_messages)
@@ -127,10 +133,10 @@ class Player:
         else:
             
             lock = self.shared_memory.get("lock")
-            print(lock.value)
+            
             lock.acquire()
             self.shared_memory.update({"lock" : lock})
-            print("lock acquired", self.shared_memory.get("lock").value)
+            
 
             print("/IT'S YOUR TURN !/")
             choice = self.input_choice()
@@ -150,6 +156,15 @@ class Player:
                         self.play_card(playable, card_choice, position)
                         break
                 
+                try:
+                    msg = (f" has played his card {card_choice} and it was at position {position}")
+
+                    self.mq.send(msg)              
+                    if self.connected_to_neighbor:
+                        self.mq_neighbor.send(msg)    
+                except:
+                    print("Error, pas de carte jouée")      
+
                 print("Turn is done")
                 self.socket.send("DONE".encode())
 
@@ -157,7 +172,7 @@ class Player:
                 msg = input("Give your information here : ")
                 self.mq.send(msg)
                 self.lose_info_token()
-
+                self.report_messages.append(f"You said : {msg}")
                 if self.connected_to_neighbor:
                     self.mq_neighbor.send(msg)
 
@@ -171,7 +186,7 @@ class Player:
 
             lock.release()
             self.shared_memory.update({"lock" : lock})
-            print("lock released", self.shared_memory.get("lock").value)
+            
 
 
             
@@ -239,7 +254,7 @@ class Player:
         new_hands = self.shared_memory.get("hands")
         new_hands[self.player_id] = new_hand
         self.shared_memory.update({"hands" : new_hands})
-        self.report_messages.append(f"The card {[random_card]} has been added to your hand at position {position}.")
+        
 
     def add_card_to_suite(self, card):
         color = card.color
