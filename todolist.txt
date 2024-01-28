@@ -1,8 +1,5 @@
 Changer give info pour ne pas pouvoir donner n'importe quelle info
 signaux pour mettre fin au jeu !!!!!
-info token
-calcul du score
-afficher la défausse
 améliorer l'affichage
     report du dernier tour :
     turn infos:
