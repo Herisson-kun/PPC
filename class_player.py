@@ -1,6 +1,7 @@
 import socket
 from multiprocessing.managers import BaseManager
 import random
+import sys
 import sysv_ipc
 import os
 from class_lock import Lock
@@ -26,12 +27,17 @@ class Player:
         self.init_network_message_queue()
         self.report_messages = []
         while True:
-            
+            self.report_from_last_turn()
+            self.show_info()
+            self.report_messages = []
             self.play()
             
     def show_info(self):
-        print("======== Turn Informations ========\n")
+        print("======== Turn Informations ========")
         
+        #Affichage du numero de tour
+        print(f"Turn n°{self.shared_memory.get('turn')}\n")
+
         # Affichage des mains des autres joueurs
         for player in self.shared_memory.get("hands"):
             if player != self.player_id:
@@ -41,7 +47,10 @@ class Player:
         print("\nRemaining Tokens:")
         print(f"Info Token: {self.shared_memory.get('info_token')}")
         print(f"Fuse Token: {self.shared_memory.get('fuse_token')}")
-        
+
+        # Affichage de la défausse
+        print(f"\nThe Discard Pile:", self.shared_memory.get("discard"))
+
         # Affichage des suites en construction
         print("\nSuites in the Making:")
         for color, suite in self.shared_memory.get("suites").items():
@@ -144,12 +153,14 @@ class Player:
                 print("Turn is done")
                 self.socket.send("DONE".encode())
 
-            if choice == "2":
-                msg = input("message : ")
-            
+            if choice == str(2):
+                msg = input("Give your information here : ")
                 self.mq.send(msg)
-                if self.connected_to_neighbor == True:
+                self.lose_info_token()
+
+                if self.connected_to_neighbor:
                     self.mq_neighbor.send(msg)
+
                 print("Turn is done")
                 self.socket.send("DONE".encode())
 
@@ -179,26 +190,7 @@ class Player:
                 return choice
             else:
                 print("Enter a valid action!")
-        
-    def input_number(self):
-        while True:
-            number = input("Enter the number of the card you want to play (1-5): ")
-            if number.isdigit():
-                number = int(number)
-                if 1 <= number <= 5:
-                    return number
-                else:
-                    print("Please enter a number between 1 and 5.")
-            else:
-                print("This is not a valid number.")
 
-    def input_color(self):
-        while True:
-            color = input("Enter the color of the card you want to play : ")
-            if color in self.shared_memory.get("colors"):
-                return color
-            print("Enter a valid color.")
-        
     def input_position(self):
         while True:
             position = input("Enter the position of the card you want to play (1-5): ")
@@ -224,12 +216,21 @@ class Player:
         fuse_token = self.shared_memory.get("fuse_token") - 1
         self.shared_memory.update({"fuse_token": fuse_token})
 
+    def lose_info_token(self):
+        info_token = self.shared_memory.get("info_token") -1
+        self.shared_memory.update({"info_token": info_token})
+
     def remove_card_from_hand(self, position):
         new_hand = self.shared_memory.get("hands").get(self.player_id)
-        new_hand.pop(position-1)
+        card = new_hand.pop(position-1)
         new_hands = self.shared_memory.get("hands")
         new_hands[self.player_id] = new_hand
-        self.shared_memory.update({"hands" : new_hands})
+        
+        new_discard_cards = self.shared_memory.get("discard")
+        new_discard_cards.append(card)
+
+        self.shared_memory.update({"hands" : new_hands, "discard": new_discard_cards})
+
 
     def add_card_to_hand(self, position):
         random_card = self.draw_card()
