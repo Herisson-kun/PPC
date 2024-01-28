@@ -59,7 +59,6 @@ class Player:
         print("\n====================================")
 
     def report_from_last_turn(self):
-            print("turn turn", self.shared_memory.get("turn"))
             if self.shared_memory.get("turn") !=1:
                 print("====== Report From Last Turn ======\n")
                 for message in self.report_messages:
@@ -235,17 +234,18 @@ class Player:
         info_token = self.shared_memory.get("info_token") -1
         self.shared_memory.update({"info_token": info_token})
 
-    def remove_card_from_hand(self, position):
+    def remove_card_from_hand(self, position, is_discarded):
         new_hand = self.shared_memory.get("hands").get(self.player_id)
         card = new_hand.pop(position-1)
         new_hands = self.shared_memory.get("hands")
         new_hands[self.player_id] = new_hand
         
-        new_discard_cards = self.shared_memory.get("discard")
-        new_discard_cards.append(card)
+        if is_discarded == True:
+            new_discard_cards = self.shared_memory.get("discard")
+            new_discard_cards.append(card)       
+            self.shared_memory.update({"hands" : new_hands, "discard": new_discard_cards})
 
-        self.shared_memory.update({"hands" : new_hands, "discard": new_discard_cards})
-
+    
 
     def add_card_to_hand(self, position):
         random_card = self.draw_card()
@@ -266,11 +266,12 @@ class Player:
         if playable:
             self.report_messages.append(f"{[card]} has been added to the {card.color} suite !")
             self.add_card_to_suite(card)
+            self.remove_card_from_hand(position, False)
         else:
             self.report_messages.append(f"The card {[card]} is not playable... You lose a fuse_token.")
             self.lose_fuse_token()
-            
-        self.remove_card_from_hand(position)
+            self.remove_card_from_hand(position, True)
+        
         self.add_card_to_hand(position)
 
 
