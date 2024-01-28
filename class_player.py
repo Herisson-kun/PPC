@@ -150,7 +150,7 @@ class Player:
                 print("Turn is done")
                 self.socket.send("DONE".encode())
 
-            lock.acquire()
+            lock.release()
             self.shared_memory.update({"lock" : lock})
             print("lock released", self.shared_memory.get("lock").value)
 
