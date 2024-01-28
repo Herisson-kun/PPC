@@ -24,9 +24,9 @@ class Player:
         
         self.connected_to_neighbor = False
         self.init_network_message_queue()
-
+        self.report_messages = []
         while True:
-            self.report_messages = []
+            
             self.play()
             
     def show_info(self):
@@ -87,6 +87,7 @@ class Player:
 
         lock = self.shared_memory.get("lock")
         print(lock.value)
+        self.report_from_last_turn()
         self.show_info()
         who_plays = self.socket.recv(1024).decode('utf-8')
         who_plays = int(who_plays)
@@ -98,13 +99,20 @@ class Player:
                 
                 msg, _  = self.mq.receive()
                 msg = msg.decode()
-                self.report_messages.append("clue from ", self.key + 1, " : ", msg)
+                report_messages = f"clue from  {who_plays} :  {msg}"
+                
+                report_messages = str(report_messages)
+                
+                self.report_messages.append(report_messages)
                 if self.connected_to_neighbor == True:
                     self.mq_neighbor.send(msg)
             else:
                 msg, _  = self.mq_neighbor.receive()
                 msg = msg.decode()
-                self.report_messages.append("clue from ", self.key + 1, " : ", msg)
+                report_messages = f"clue from  {who_plays} :  {msg}"
+                
+                
+                self.report_messages.append(report_messages)
                 #todo - rajouter une condition si on est le joueur le plus élevé pour éviter de remplir une msg q pour rien
                 self.mq.send(msg)
         else:
