@@ -1,9 +1,8 @@
-Changer give info pour ne pas pouvoir donner n'importe quelle info
+Changer give info pour ne pas pouvoir donner n'importe quelle info --done mais à check
+
+
 signaux pour mettre fin au jeu !!!!!
-améliorer l'affichage
-    report du dernier tour :
-    turn infos:
-    it's player x turn / it's your turn ++ choices
 
 
+rapport
 prep l'oral
