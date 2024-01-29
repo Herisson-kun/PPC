@@ -15,13 +15,16 @@ class Player:
         self.connect('127.0.0.1', 8080)
         _, port = self.socket.getsockname()
         self.player_id = port
-                
+        self.my_pid = str(os.getpid())
+              
         # shared_memory
         self.shared_memory ={}
         self.init_shared_memory()
 
         self.receive_message()
-        self.send_message("hello")
+
+
+        self.send_message(self.my_pid)
         
         self.connected_to_neighbor = False
         self.init_network_message_queue()

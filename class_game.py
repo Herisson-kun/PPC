@@ -13,6 +13,7 @@ class Game():
         self.player_id_counter = 1
         self.players = {}
         self.numbers = [1, 1, 1, 2, 2, 3, 3, 4, 4, 5]
+        self.players_pid = []
 
         lock = threading.Lock()
         thread_shared_memory = threading.Thread(target=self.run_shared_memory, args=(lock,))
@@ -32,8 +33,11 @@ class Game():
             self.send_message("hello", player)
 
         for player in self.players:
-            self.receive_message(player)
+            player_pid = self.receive_message(player, True)
+            player_pid = int(player_pid)
+            self.players_pid.append(player_pid)
 
+        print(self.players_pid)
         self.run_game()
         
 
