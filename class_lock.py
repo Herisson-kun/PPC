@@ -7,11 +7,9 @@ class Lock:
             pass
 
     def _try_acquire(self):
-        current_value = self.value
-        new_value = current_value - 1
-
-        if current_value > 0:
-            self.value = new_value
+        
+        if self.value > 0:
+            self.value = self.value -1
             return True
         else:
             return False
