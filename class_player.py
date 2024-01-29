@@ -21,7 +21,7 @@ class Player:
         self.init_shared_memory()
 
         self.receive_message()
-        self.send_message( "hello")
+        self.send_message("hello")
         
         self.connected_to_neighbor = False
         self.init_network_message_queue()
@@ -49,17 +49,19 @@ class Player:
         print(f"Fuse Token: {self.shared_memory.get('fuse_token')}")
 
         # Affichage de la défausse
-        print(f"\nThe Discard Pile:", self.shared_memory.get("discard"))
+        print(f"\nDiscard Pile:", self.shared_memory.get("discard"))
 
         # Affichage des suites en construction
         print("\nSuites in the Making:")
         for color, suite in self.shared_memory.get("suites").items():
-            print(f"Suite {color}: {suite}")
+            print(f"{color} suite : {suite}")
 
         print("\n====================================")
 
     def report_from_last_turn(self):
+
             if self.shared_memory.get("turn") !=1:
+                os.system('clear')
                 print("====== Report From Last Turn ======\n")
                 for message in self.report_messages:
                     print(message)
@@ -88,17 +90,8 @@ class Player:
             self.connected_to_neighbor = True
    
 
-        
-
-        #for player in self.shared_memory.get('player_number'):
-
-
     def play(self):
 
-        lock = self.shared_memory.get("lock")
-        
-        
-        
         who_plays = self.socket.recv(1024).decode('utf-8')
         who_plays = int(who_plays)
 
@@ -132,11 +125,9 @@ class Player:
         else:
             
             lock = self.shared_memory.get("lock")
-            
             lock.acquire()
             self.shared_memory.update({"lock" : lock})
             
-
             print("/IT'S YOUR TURN !/")
             choice = self.input_choice()
 
@@ -156,7 +147,7 @@ class Player:
                         break
                 
                 try:
-                    msg = (f" has played his card {card_choice} and it was at position {position}")
+                    msg = (f"has played his card {card_choice} and it was at position {position}")
 
                     self.mq.send(msg)              
                     if self.connected_to_neighbor:
@@ -164,11 +155,10 @@ class Player:
                 except:
                     print("Error, pas de carte jouée")      
 
-                print("Turn is done")
                 self.socket.send("DONE".encode())
 
             if choice == str(2): #rajouter un while pour ne pas pouvoir rentrer autre chose que ce qui est voulu
-                kind_of_clue = input("Choose which kind of information you wanted to give : \n1: Clue about a single color\n2: Clue about a single number\n")
+                kind_of_clue = input("Choose which kind of information you want to give : \n1: Clue about a single color\n2: Clue about a single number\n")
                 while kind_of_clue not in ["1","2"]:
                     kind_of_clue = input("Please enter 1 or 2 ")
                 if kind_of_clue == str(1):
@@ -176,7 +166,7 @@ class Player:
                     while color not in self.shared_memory.get("colors"):
                         color = input("Enter a valid color : ")
                     positions = []
-                    number_of_clues = input("Enter the number of cards you wanted to give information about ")
+                    number_of_clues = input("Enter the number of cards you want to give information about ")
                     while number_of_clues not in ["1","2","3","4","5"]:
                         number_of_clues = input("Enter a valid number : ")
                     number_of_clues = int(number_of_clues)
@@ -196,7 +186,7 @@ class Player:
                     while number not in ["1","2","3","4","5"]:
                         number = input("Enter a valid number : ")
                     positions = []
-                    number_of_clues = input("Enter the number of card(s) you wanted to give information about ")
+                    number_of_clues = input("Enter the number of card(s) you want to give information about ")
                     while number_of_clues not in ["1","2","3","4","5"]:
                         number_of_clues = input("Enter a valid number : ")
                     number_of_clues = int(number_of_clues)
@@ -217,20 +207,16 @@ class Player:
                 if self.connected_to_neighbor:
                     self.mq_neighbor.send(msg)
 
-                print("Turn is done")
                 self.socket.send("DONE".encode())
 
             if choice == "3":
                 self.mq.remove()
-                print("Turn is done")
                 self.socket.send("DONE".encode())
 
             lock.release()
             self.shared_memory.update({"lock" : lock})
             
 
-
-            
     
     def draw_card(self):
         deck = self.shared_memory.get("deck")
@@ -281,13 +267,12 @@ class Player:
         card = new_hand.pop(position-1)
         new_hands = self.shared_memory.get("hands")
         new_hands[self.player_id] = new_hand
+        self.shared_memory.update({"hands" : new_hands})
         
-        if is_discarded == True:
+        if is_discarded:
             new_discard_cards = self.shared_memory.get("discard")
-            new_discard_cards.append(card)       
-            self.shared_memory.update({"hands" : new_hands, "discard": new_discard_cards})
-
-    
+            new_discard_cards.append(card)
+            self.shared_memory.update({"discard": new_discard_cards})
 
     def add_card_to_hand(self, position):
         random_card = self.draw_card()
@@ -296,7 +281,6 @@ class Player:
         new_hands = self.shared_memory.get("hands")
         new_hands[self.player_id] = new_hand
         self.shared_memory.update({"hands" : new_hands})
-        
 
     def add_card_to_suite(self, card):
         color = card.color
@@ -331,7 +315,7 @@ class Player:
         data = self.socket.recv(1024)
         print(f"Received from server : {data.decode('utf-8')}")
         
-        
+
     def signal_handler(signum, frame):
         # Handle signals, e.g., end of game
         pass
