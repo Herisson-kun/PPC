@@ -51,7 +51,7 @@ class Player:
             print("LOOSE")
         print("Good bye have a nice day")
         try:
-            self.mq.close()
+            self.mq.remove()
             print("mq closed")            
         except:
             pass
