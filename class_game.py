@@ -17,8 +17,8 @@ class Game():
         self.players_pid = []
 
         lock = threading.Lock()
-        thread_shared_memory = threading.Thread(target=self.run_shared_memory, args=(lock,))
-        thread_shared_memory.start()
+        self.thread_shared_memory = threading.Thread(target=self.run_shared_memory, args=(lock,))
+        self.thread_shared_memory.start()
         self.init_shared_memory(lock)
 
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -191,5 +191,6 @@ class Game():
                 os.kill(player_pid, signal.SIGUSR2)
 
         self.server_socket.close()
+        print("socket server closed")
         self.thread_shared_memory.stop()
         print("This is the end")

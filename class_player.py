@@ -56,6 +56,7 @@ class Player:
         except:
             pass
         self.socket.close()
+        print("socket with game closed")
         os.kill(int(self.my_pid), signal.SIGKILL)
 
             
