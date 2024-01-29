@@ -192,5 +192,6 @@ class Game():
 
         self.server_socket.close()
         print("socket server closed")
-        self.thread_shared_memory.stop()
+        self.thread_shared_memory.join(1)
         print("This is the end")
+        os.kill(os.getpid(), signal.SIGKILL)
