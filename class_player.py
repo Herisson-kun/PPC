@@ -5,7 +5,7 @@ import sys
 import sysv_ipc
 import os
 from class_lock import Lock
-
+import signal
 
 
 class Player:
@@ -16,7 +16,8 @@ class Player:
         _, port = self.socket.getsockname()
         self.player_id = port
         self.my_pid = str(os.getpid())
-              
+        signal.signal(signal.SIGUSR1, self.victory_handler)
+        signal.signal(signal.SIGUSR2, self.defeat_handler)      
         # shared_memory
         self.shared_memory ={}
         self.init_shared_memory()
@@ -33,7 +34,30 @@ class Player:
         while True:            
             self.play()
             #self.shared
-                        
+
+
+    def victory_handler (self, sig, frame):
+        if sig == signal.SIGUSR1:
+            self.end_game(True)
+
+    def defeat_handler (self, sig, frame):
+        if sig == signal.SIGUSR2:
+            self.end_game(False)        
+            
+    def end_game(self, result):
+        if result == True:
+            print("WIN")
+        else:
+            print("LOOSE")
+        print("Good bye have a nice day")
+        try:
+            self.mq.close()
+            print("mq closed")            
+        except:
+            pass
+        self.socket.close()
+        os.kill(int(self.my_pid), signal.SIGKILL)
+
             
     def show_info(self):
         print("======== Turn Informations ========")
@@ -301,7 +325,10 @@ class Player:
             self.lose_fuse_token()
             self.remove_card_from_hand(position, True)
         
-        self.add_card_to_hand(position)
+        try:
+            self.add_card_to_hand(position)
+        except:
+            self.report_messages.append("Deck is empty.")
 
 
     def connect(self, host, port):

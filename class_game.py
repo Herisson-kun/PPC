@@ -5,6 +5,7 @@ import signal
 from class_card import Card
 from multiprocessing.managers import BaseManager
 from class_lock import Lock
+import os
 
 class Game():
 
@@ -149,6 +150,7 @@ class Game():
         who_plays = 0
         while True:
             self.update_turn()
+            self.check_game()
             player_playing = list(self.players.keys())[who_plays]
             player_turn_number = who_plays + 1
             player_turn_number = str(player_turn_number)
@@ -160,4 +162,34 @@ class Game():
             is_done = self.receive_message(player_playing, True)
 
             who_plays = (who_plays+1)%self.number_of_players
-            
+
+    def check_game(self):
+        if self.shared_memory.get("fuse_token") == 0:
+            self.end_game(False)
+        correct_cards = 0
+        score = 0
+        #self.score()
+        #print("score avec self.score(): ", self.shared_memory.get("score"))
+        for color in self.shared_memory.get("colors"):
+            try:
+                print(self.shared_memory.get("suites").get(color).pop().number)
+                score += self.shared_memory.get("suites").get(color).pop().number
+            except:
+                print("empty suite")
+
+        print("score by me : ",score)
+        if score == self.number_of_players*5:
+            print("jenvoie win")
+            self.end_game(True)
+
+    def end_game(self, result):
+        if result == True:
+            for player_pid in self.players_pid:
+                os.kill(player_pid, signal.SIGUSR1)
+        else:
+            for player_pid in self.players_pid:
+                os.kill(player_pid, signal.SIGUSR2)
+
+        self.server_socket.close()
+        self.thread_shared_memory.stop()
+        print("This is the end")
