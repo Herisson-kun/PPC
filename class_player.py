@@ -319,5 +319,3 @@ class Player:
     def signal_handler(signum, frame):
         # Handle signals, e.g., end of game
         pass
-
-player = Player()
