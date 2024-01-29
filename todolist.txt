@@ -1,8 +1,12 @@
-Changer give info pour ne pas pouvoir donner n'importe quelle info --done mais à check
+Commentaires
+Enlever les print useless
+message de bienvenue
+message de fin du jeu
+    score
+    gagné/perdu
+    have a nice day
 
-
-signaux pour mettre fin au jeu !!!!!
-
+    
 
 rapport
 prep l'oral
