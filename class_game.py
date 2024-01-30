@@ -186,6 +186,11 @@ class Game():
         for player in self.players:
             self.send_message(str(score), player)
 
+        for player in self.players:
+            message = self.receive_message(player, True)
+            message = str(message)
+            
+
         self.server_socket.close()
         print("socket server closed")
         self.thread_shared_memory.join(1)

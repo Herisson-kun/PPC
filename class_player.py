@@ -59,6 +59,7 @@ class Player:
     def end_game(self, result):
         os.system('clear')
         score = self.receive_message(True).decode('utf-8')
+        self.send_message(str(self.key))
         if result:
             print("====== End of the Game ======\n")
             print("YOU WIN !")
