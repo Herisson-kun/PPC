@@ -70,7 +70,6 @@ class Game():
         intermediate_data["info_token"] = len(self.players) + 3
         intermediate_data["suites"] = {f"{color}" : [] for color in intermediate_data["colors"]}
         intermediate_data["discard"] = []
-        intermediate_data["score"] = 0
         self.shared_memory.update(intermediate_data)
         
         self.create_deck()
@@ -169,8 +168,7 @@ class Game():
             try:
                 score += self.shared_memory.get("suites").get(color).pop().number
             except:
-                print("empty suite")
-
+                pass
         if self.shared_memory.get("fuse_token") == 0:
             self.end_game(False, score)
 

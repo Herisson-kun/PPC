@@ -235,17 +235,17 @@ class Player:
                     number_of_clues = int(number_of_clues)
                     for i in range(number_of_clues):
                         
-                        position = input("Enter the position of the card ")
+                        position = input("Enter the position of the card : ")
                         while position not in ["1","2","3","4","5"] or int(position) in positions:                            
-                            position = input("Enter a valid number ")
+                            position = input("Enter a valid number : ")
 
                         position = int(position)
                         positions.append(position)
 
-                    msg = (f"Player{to_who} has {number_of_clues} {color} cards in your hand. Their positions are {positions}")
+                    msg = (f"Player{to_who} has {number_of_clues} {color} cards in his hand. Their positions are {positions}")
 
                 if kind_of_clue == "number":
-                    number = input("Enter the number :")
+                    number = input("Enter the number : ")
                     while number not in ["1","2","3","4","5"]:
                         number = input("Enter a valid number : ")
                     positions = []
@@ -255,14 +255,14 @@ class Player:
                     number_of_clues = int(number_of_clues)
                     for i in range(number_of_clues):
                         
-                        position = input("Enter the position of the card ")
+                        position = input("Enter the position of the card : ")
                         while position not in ["1","2","3","4","5"] or int(position) in positions:             
-                            position = input("Enter a valid number ")                                     
+                            position = input("Enter a valid number : ")                                     
                             
                         position = int(position)
                         positions.append(position)
 
-                    msg = (f"Player{to_who} has {number_of_clues} card(s) with the number {number} in your hand. Their positions are {positions}")
+                    msg = (f"Player{to_who} has {number_of_clues} card(s) with the number {number} in his hand. Their positions are {positions}")
 
                 self.mq.send(msg)
                 self.lose_info_token()
@@ -289,7 +289,7 @@ class Player:
             if choice == "play" or  (choice == "info" and self.shared_memory.get("info_token") > 0):
                 return choice
             else:
-                print("Enter a valid action! : play or info")
+                print("Enter a valid action! : [play, info] ")
 
     def input_position(self):
         while True:
@@ -319,6 +319,12 @@ class Player:
     def lose_info_token(self):
         info_token = self.shared_memory.get("info_token") -1
         self.shared_memory.update({"info_token": info_token})
+    
+    def add_info_token(self, card):
+        if card.number == 5:
+            info_token = self.shared_memory.get("info_token") + 1
+            self.shared_memory.update({"info_token": info_token})
+            self.report_messages.append("You completed a suite ! You gain an info_token.")
 
     def remove_card_from_hand(self, position, is_discarded):
         new_hand = self.shared_memory.get("hands").get(self.player_id)
@@ -350,6 +356,7 @@ class Player:
         if playable:
             self.report_messages.append(f"{[card]} has been added to the {card.color} suite !")
             self.add_card_to_suite(card)
+            self.add_info_token(card)
             self.remove_card_from_hand(position, False)
         else:
             self.report_messages.append(f"The card {[card]} is not playable... You lose a fuse_token.")
