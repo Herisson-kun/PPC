@@ -31,7 +31,7 @@ class Game():
         print(self.shared_memory)
         
         for player in self.players:
-            self.send_message("hello", player)
+            self.send_message("Welcome !", player)
 
         for player in self.players:
             player_pid = self.receive_message(player, True)

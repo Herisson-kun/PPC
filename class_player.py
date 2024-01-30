@@ -35,6 +35,12 @@ class Player:
             self.play()
             #self.shared
 
+    def get_score(self):
+        for color in self.shared_memory.get("colors"):
+            try:
+                score += self.shared_memory.get("suites").get(color).pop().number
+            except:
+                print("empty suite")
 
     def victory_handler (self, sig, frame):
         if sig == signal.SIGUSR1:
@@ -45,10 +51,16 @@ class Player:
             self.end_game(False)        
             
     def end_game(self, result):
-        if result == True:
+        if result:
+            print("====== End of the Game ======\n")
             print("YOU WIN !")
+            print("Score :", self.get_score())
+            print("\n=============================")
         else:
-            print("YOU LOOSE !")
+            print("====== End of the Game ======\n")
+            print("YOU LOST !")
+            print("Score :", self.get_score())
+            print("\n=============================")
         try:
             self.mq.remove()
         except:
@@ -56,7 +68,6 @@ class Player:
         self.socket.close()
         print("Game is closing...")
         os.kill(int(self.my_pid), signal.SIGKILL)
-
             
     def show_info(self):
         print("======== Turn Informations ========")
