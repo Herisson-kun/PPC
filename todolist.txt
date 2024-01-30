@@ -1,6 +1,5 @@
 Commentaires
 Enlever les print useless
-message de bienvenue
 
     
 
