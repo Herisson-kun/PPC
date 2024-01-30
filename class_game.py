@@ -14,18 +14,26 @@ class Game():
         self.player_id_counter = 1
         self.players = {}
         self.numbers = [1, 1, 1, 2, 2, 3, 3, 4, 4, 5]
+
         self.players_pid = []
 
         lock = threading.Lock()
         self.thread_shared_memory = threading.Thread(target=self.run_shared_memory, args=(lock,))
         self.thread_shared_memory.start()
         self.init_shared_memory(lock)
-
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)   
         self.server_socket.bind(('127.0.0.1', 8080))
+            
+
         self.server_socket.listen(5)
         print(f"Le jeu écoute sur 127.0.0.1:8080")
         self.accept_players()
+
+        for x in range(1, 1+ len(self.players)):
+            os.system(f"ipcrm -Q {x}")
+            os.system(f"echo mq{x} removed")
 
         self.build_shared_memory()
         print(self.shared_memory)

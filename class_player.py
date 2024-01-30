@@ -18,7 +18,9 @@ class Player:
         self.player_id = port
         self.my_pid = str(os.getpid())
         signal.signal(signal.SIGUSR1, self.victory_handler)
-        signal.signal(signal.SIGUSR2, self.defeat_handler)   
+        signal.signal(signal.SIGUSR2, self.defeat_handler)  
+        self.dico_couleur = {"red": ["\033[1;31m", "\033[0m"], "blue": ["\033[1;34m", "\033[0m"], "green": ["\033[1;32m", "\033[0m"], "yellow": ["\033[1;33m", "\033[0m"], "white": ["\033[1;37m", "\033[0m"]}
+ 
 
         # shared_memory
         self.shared_memory ={}
@@ -98,7 +100,7 @@ class Player:
         # Affichage des suites en construction
         print("\nSuites in the Making:")
         for color, suite in self.shared_memory.get("suites").items():
-            print(f"{color} suite : {suite}")
+            print(f"{self.dico_couleur[color][0]} {color} suite : {suite} {self.dico_couleur[color][1]}") 
 
         print("\n====================================")
 
@@ -163,7 +165,7 @@ class Player:
             else:
                 msg, _  = self.mq_neighbor.receive()
                 msg = msg.decode()
-                report_messages = f"Player{who_plays} {msg}"
+                report_messages = f"Player{who_plays} : {msg}"
                 
                 
                 self.report_messages.append(report_messages)
@@ -194,7 +196,7 @@ class Player:
                         break
                 
                 try:
-                    msg = (f"has played his card {card_choice} and it was at position {position}")
+                    msg = (f"has played his card {[card_choice]} and it was at position {position}")
 
                     self.mq.send(msg)              
                     if self.connected_to_neighbor:
@@ -205,7 +207,19 @@ class Player:
                 self.socket.send("DONE".encode())
 
             if choice == str(2):
-                
+
+                if len(self.shared_memory.get("player_number")) > 2:
+                    player_list = [1,2,3,4,5][:len(self.shared_memory.get("player_number"))]
+                    player_list.remove(self.key)
+                    to_who = int(input("Choose the player you want to give information to : "))
+                    while to_who not in player_list:
+                        to_who = int(input(f"Enter a valid player in {player_list} : "))
+                else:
+                    for player_number in self.shared_memory.get("player_number").values():
+                        if player_number != self.key:
+                            to_who = player_number
+                            break
+
                 kind_of_clue = input("Choose which kind of information you want to give : \n1: Clue about a single color\n2: Clue about a single number\n")
                 while kind_of_clue not in ["1","2"]:
                     kind_of_clue = input("Please enter 1 or 2 ")
@@ -227,7 +241,7 @@ class Player:
                         position = int(position)
                         positions.append(position)
 
-                    msg = (f"You have {number_of_clues} {color} cards in your hand. Their positions are {positions}")
+                    msg = (f"Player{to_who} has {number_of_clues} {color} cards in your hand. Their positions are {positions}")
 
                 if kind_of_clue == str(2):
                     number = input("Enter the number :")
@@ -247,7 +261,7 @@ class Player:
                         position = int(position)
                         positions.append(position)
 
-                    msg = (f"You have {number_of_clues} card(s) with the number {number} in your hand. Their positions are {positions}")
+                    msg = (f"Player{to_who} has {number_of_clues} card(s) with the number {number} in your hand. Their positions are {positions}")
 
                 self.mq.send(msg)
                 self.lose_info_token()
@@ -362,7 +376,3 @@ class Player:
             return data
         else:
             print(f"Received from server : {data.decode('utf-8')}")
-
-    def signal_handler(signum, frame):
-        # Handle signals, e.g., end of game
-        pass
