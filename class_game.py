@@ -182,7 +182,7 @@ class Game():
         else:
             for player_pid in self.players_pid:
                 os.kill(player_pid, signal.SIGUSR2)
-        1
+                
         for player in self.players:
             self.send_message(str(score), player)
 

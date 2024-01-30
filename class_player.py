@@ -62,7 +62,6 @@ class Player:
         if result:
             print("====== End of the Game ======\n")
             print("YOU WIN !")
-            print("Turns :", self.shared_memory.get("turn"))
             print("Score :", score)
             print("\n=============================")
         else:
