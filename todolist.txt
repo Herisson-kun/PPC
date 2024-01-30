@@ -1,10 +1,6 @@
 Commentaires
 Enlever les print useless
 message de bienvenue
-message de fin du jeu
-    score
-    gagné/perdu
-    have a nice day
 
     
 

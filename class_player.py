@@ -17,12 +17,15 @@ class Player:
         self.player_id = port
         self.my_pid = str(os.getpid())
         signal.signal(signal.SIGUSR1, self.victory_handler)
-        signal.signal(signal.SIGUSR2, self.defeat_handler)      
+        signal.signal(signal.SIGUSR2, self.defeat_handler)   
+
         # shared_memory
         self.shared_memory ={}
         self.init_shared_memory()
 
+        print("===== Welcome to Hanabis ! =====\n")
         self.receive_message()
+        print("\n=================================")
 
 
         self.send_message(self.my_pid)

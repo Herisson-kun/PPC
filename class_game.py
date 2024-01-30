@@ -31,7 +31,7 @@ class Game():
         print(self.shared_memory)
         
         for player in self.players:
-            self.send_message("Welcome !", player)
+            self.send_message(f"Hello Player{self.shared_memory.get('player_number').get(player)}!", player)
 
         for player in self.players:
             player_pid = self.receive_message(player, True)
@@ -166,10 +166,7 @@ class Game():
     def check_game(self):
         if self.shared_memory.get("fuse_token") == 0:
             self.end_game(False)
-        correct_cards = 0
         score = 0
-        #self.score()
-        #print("score avec self.score(): ", self.shared_memory.get("score"))
         for color in self.shared_memory.get("colors"):
             try:
                 print(self.shared_memory.get("suites").get(color).pop().number)
@@ -177,12 +174,12 @@ class Game():
             except:
                 print("empty suite")
 
-        print("score by me : ",score)
         if score == self.number_of_players*5:
             self.end_game(True)
 
     def end_game(self, result):
-        if result == True:
+        
+        if result:
             for player_pid in self.players_pid:
                 os.kill(player_pid, signal.SIGUSR1)
         else:
