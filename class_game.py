@@ -131,14 +131,6 @@ class Game():
         print(f"Reçu du joueur {self.shared_memory.get('player_number').get(exp)} : {data.decode('utf-8')}")
         if _return_:
             return data
-    
-    def score(self):
-        suites = self.shared_memory.get("suites")
-        score = 0
-        for suite in suites:
-            score += sum(suite)
-        
-        self.shared_memory.update({"score":score})
 
     def update_turn(self):
         current_turn = self.shared_memory.get("turn")
@@ -164,27 +156,29 @@ class Game():
             who_plays = (who_plays+1)%self.number_of_players
 
     def check_game(self):
-        if self.shared_memory.get("fuse_token") == 0:
-            self.end_game(False)
         score = 0
         for color in self.shared_memory.get("colors"):
             try:
-                print(self.shared_memory.get("suites").get(color).pop().number)
                 score += self.shared_memory.get("suites").get(color).pop().number
             except:
                 print("empty suite")
 
-        if score == self.number_of_players*5:
-            self.end_game(True)
+        if self.shared_memory.get("fuse_token") == 0:
+            self.end_game(False, score)
 
-    def end_game(self, result):
-        
+        if score == self.number_of_players*5:
+            self.end_game(True, score)
+
+    def end_game(self, result, score):
         if result:
             for player_pid in self.players_pid:
                 os.kill(player_pid, signal.SIGUSR1)
         else:
             for player_pid in self.players_pid:
                 os.kill(player_pid, signal.SIGUSR2)
+        
+        for player in self.players:
+            self.send_message(score, player)
 
         self.server_socket.close()
         print("socket server closed")

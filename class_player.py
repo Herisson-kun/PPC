@@ -54,15 +54,16 @@ class Player:
             self.end_game(False)        
             
     def end_game(self, result):
+        score = self.receive_message(True)
         if result:
             print("====== End of the Game ======\n")
             print("YOU WIN !")
-            print("Score :", self.get_score())
+            print("Score :", score)
             print("\n=============================")
         else:
             print("====== End of the Game ======\n")
             print("YOU LOST !")
-            print("Score :", self.get_score())
+            print("Score :", score)
             print("\n=============================")
         try:
             self.mq.remove()
@@ -343,7 +344,6 @@ class Player:
         except:
             self.report_messages.append("Deck is empty.")
 
-
     def connect(self, host, port):
         self.socket.connect((host, port))
         print(f"Connecté au serveur {host}:{port}")
@@ -354,10 +354,12 @@ class Player:
         except socket.error as e:
             print(f"Erreur lors de l'envoi du message : {e}")
 
-    def receive_message(self):
-        data = self.socket.recv(1024)
-        print(f"Received from server : {data.decode('utf-8')}")
-        
+    def receive_message(self, _result_=False):
+        if _result_:
+            data = self.socket.recv(1024)
+            return data
+        else:
+            print(f"Received from server : {data.decode('utf-8')}")
 
     def signal_handler(signum, frame):
         # Handle signals, e.g., end of game
