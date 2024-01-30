@@ -100,7 +100,7 @@ class Player:
         # Affichage des suites en construction
         print("\nSuites in the Making:")
         for color, suite in self.shared_memory.get("suites").items():
-            print(f"{self.dico_couleur[color][0]} {color} suite : {suite} {self.dico_couleur[color][1]}") 
+            print(f"{self.dico_couleur[color][0]} {color} suite :{self.dico_couleur[color][1]}{suite}") 
 
         print("\n====================================")
 
@@ -180,7 +180,7 @@ class Player:
             print("/IT'S YOUR TURN !/")
             choice = self.input_choice()
 
-            if choice == str(1):
+            if choice == "play":
                 while True:
                     try:
                         position, card_choice = self.input_position()
@@ -206,12 +206,12 @@ class Player:
 
                 self.socket.send("DONE".encode())
 
-            if choice == str(2):
+            if choice == "info":
 
                 if len(self.shared_memory.get("player_number")) > 2:
                     player_list = [1,2,3,4,5][:len(self.shared_memory.get("player_number"))]
                     player_list.remove(self.key)
-                    to_who = int(input("Choose the player you want to give information to : "))
+                    to_who = int(input("\nChoose the player you want to give information to : "))
                     while to_who not in player_list:
                         to_who = int(input(f"Enter a valid player in {player_list} : "))
                 else:
@@ -220,10 +220,11 @@ class Player:
                             to_who = player_number
                             break
 
-                kind_of_clue = input("Choose which kind of information you want to give : \n1: Clue about a single color\n2: Clue about a single number\n")
-                while kind_of_clue not in ["1","2"]:
-                    kind_of_clue = input("Please enter 1 or 2 ")
-                if kind_of_clue == str(1):
+                kind_of_clue = input("\n'color': Clue about a single color;\n'number': Clue about a single number;\nChoose which kind of information you want to give : ")
+                while kind_of_clue not in ["color","number"]:
+                    kind_of_clue = input("Please enter 'color' or 'number' :")
+
+                if kind_of_clue == "color":
                     color = input("Enter the color : ")
                     while color not in self.shared_memory.get("colors"):
                         color = input("Enter a valid color : ")
@@ -243,7 +244,7 @@ class Player:
 
                     msg = (f"Player{to_who} has {number_of_clues} {color} cards in your hand. Their positions are {positions}")
 
-                if kind_of_clue == str(2):
+                if kind_of_clue == "number":
                     number = input("Enter the number :")
                     while number not in ["1","2","3","4","5"]:
                         number = input("Enter a valid number : ")
@@ -284,11 +285,11 @@ class Player:
 
     def input_choice(self):
         while True:
-            choice = input("What will you do ? : 1 to play card, 2 to give information\n")
-            if choice == str(1) or  (choice == str(2) and self.shared_memory.get("info_token") > 0):
+            choice = input("\n'play' : Play a card;\n'info' : Give an information;\n What will you do : ")
+            if choice == "play" or  (choice == "info" and self.shared_memory.get("info_token") > 0):
                 return choice
             else:
-                print("Enter a valid action!")
+                print("Enter a valid action! : play or info")
 
     def input_position(self):
         while True:
