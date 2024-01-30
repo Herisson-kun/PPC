@@ -179,7 +179,6 @@ class Game():
 
         print("score by me : ",score)
         if score == self.number_of_players*5:
-            print("jenvoie win")
             self.end_game(True)
 
     def end_game(self, result):

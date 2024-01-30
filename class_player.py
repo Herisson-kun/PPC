@@ -46,17 +46,15 @@ class Player:
             
     def end_game(self, result):
         if result == True:
-            print("WIN")
+            print("YOU WIN !")
         else:
-            print("LOOSE")
-        print("Good bye have a nice day")
+            print("YOU LOOSE !")
         try:
             self.mq.remove()
-            print("mq closed")            
         except:
             pass
         self.socket.close()
-        print("socket with game closed")
+        print("Game is closing...")
         os.kill(int(self.my_pid), signal.SIGKILL)
 
             
