@@ -6,6 +6,7 @@ import sysv_ipc
 import os
 from class_lock import Lock
 import signal
+import time
 
 
 class Player:
@@ -54,10 +55,12 @@ class Player:
             self.end_game(False)        
             
     def end_game(self, result):
-        score = self.receive_message(True)
+        os.system('clear')
+        score = self.receive_message(True).decode('utf-8')
         if result:
             print("====== End of the Game ======\n")
             print("YOU WIN !")
+            print("Turns :", self.shared_memory.get("turn"))
             print("Score :", score)
             print("\n=============================")
         else:
@@ -126,9 +129,12 @@ class Player:
 
         if self.key !=1:
             key_neighbor = self.key - 1
-            self.mq_neighbor = sysv_ipc.MessageQueue(key_neighbor)
-            #print("success link with player", key_neighbor)
-            self.connected_to_neighbor = True
+            while not self.connected_to_neighbor:
+                try:
+                    self.mq_neighbor = sysv_ipc.MessageQueue(key_neighbor)
+                    self.connected_to_neighbor = True
+                except:
+                    pass
    
 
     def play(self):
@@ -147,7 +153,7 @@ class Player:
                 
                 msg, _  = self.mq.receive()
                 msg = msg.decode()
-                report_messages = f"Player{who_plays} {msg}"
+                report_messages = f"Player{who_plays} : {msg}"
                 
                 report_messages = str(report_messages)
                 
@@ -198,7 +204,8 @@ class Player:
 
                 self.socket.send("DONE".encode())
 
-            if choice == str(2): #rajouter un while pour ne pas pouvoir rentrer autre chose que ce qui est voulu
+            if choice == str(2):
+                
                 kind_of_clue = input("Choose which kind of information you want to give : \n1: Clue about a single color\n2: Clue about a single number\n")
                 while kind_of_clue not in ["1","2"]:
                     kind_of_clue = input("Please enter 1 or 2 ")
@@ -247,11 +254,6 @@ class Player:
                 self.report_messages.append(f"You said : {msg}")
                 if self.connected_to_neighbor:
                     self.mq_neighbor.send(msg)
-
-                self.socket.send("DONE".encode())
-
-            if choice == "3":
-                self.mq.remove()
                 self.socket.send("DONE".encode())
 
             lock.release()
@@ -269,7 +271,7 @@ class Player:
     def input_choice(self):
         while True:
             choice = input("What will you do ? : 1 to play card, 2 to give information\n")
-            if choice == str(1) or  choice == str(2):
+            if choice == str(1) or  (choice == str(2) and self.shared_memory.get("info_token") > 0):
                 return choice
             else:
                 print("Enter a valid action!")
@@ -355,8 +357,8 @@ class Player:
             print(f"Erreur lors de l'envoi du message : {e}")
 
     def receive_message(self, _result_=False):
+        data = self.socket.recv(1024)
         if _result_:
-            data = self.socket.recv(1024)
             return data
         else:
             print(f"Received from server : {data.decode('utf-8')}")
